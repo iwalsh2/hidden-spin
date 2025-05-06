@@ -1,5 +1,5 @@
 "use client"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -30,6 +30,39 @@ export default function Library() {
 
   // Add state for add artist dialog
   const [addArtistDialogOpen, setAddArtistDialogOpen] = useState(false)
+
+  // Refs for the tab items
+  const libraryTabRef = useRef(null)
+  const addArtistButtonRef = useRef(null)
+
+  // State for the underline position
+  const [underlineStyle, setUnderlineStyle] = useState({
+    left: 0,
+    width: 0,
+  })
+
+  // Update underline position when active tab changes
+  useEffect(() => {
+    const updateUnderline = () => {
+      if (activeTab === "library" && libraryTabRef.current) {
+        const rect = libraryTabRef.current.getBoundingClientRect()
+        setUnderlineStyle({
+          left: rect.left - (libraryTabRef.current.parentElement?.getBoundingClientRect().left || 0),
+          width: rect.width,
+        })
+      } else if (addArtistDialogOpen && addArtistButtonRef.current) {
+        const rect = addArtistButtonRef.current.getBoundingClientRect()
+        setUnderlineStyle({
+          left: rect.left - (addArtistButtonRef.current.parentElement?.getBoundingClientRect().left || 0),
+          width: rect.width,
+        })
+      }
+    }
+
+    // Small delay to ensure refs are populated
+    const timer = setTimeout(updateUnderline, 50)
+    return () => clearTimeout(timer)
+  }, [activeTab, addArtistDialogOpen])
 
   // Add a function to sort genres alphabetically
   const sortedGenres = useMemo(() => {
@@ -266,18 +299,30 @@ export default function Library() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-            <TabsList className="flex justify-center">
-              <TabsTrigger value="library" className="flex-1 min-w-[120px]">
-                Public Library
-              </TabsTrigger>
-              <Button
-                variant="ghost"
-                onClick={() => setAddArtistDialogOpen(true)}
-                className="flex-1 min-w-[120px] hover:bg-accent"
-              >
-                Add Artist
-              </Button>
-            </TabsList>
+            <div className="relative">
+              <TabsList className="flex justify-center">
+                <TabsTrigger ref={libraryTabRef} value="library" className="flex-1 min-w-[120px]">
+                  Public Library
+                </TabsTrigger>
+                <Button
+                  ref={addArtistButtonRef}
+                  variant="ghost"
+                  onClick={() => setAddArtistDialogOpen(true)}
+                  className="flex-1 min-w-[120px] hover:bg-accent"
+                >
+                  Add Artist
+                </Button>
+              </TabsList>
+
+              {/* Animated underline */}
+              <div
+                className="absolute bottom-0 h-[2px] bg-custom-blue transition-all duration-300 ease-in-out"
+                style={{
+                  left: underlineStyle.left,
+                  width: underlineStyle.width,
+                }}
+              />
+            </div>
 
             <div className="flex items-center gap-2 mt-4 sm:mt-0">
               <div className="relative">
@@ -340,7 +385,16 @@ export default function Library() {
           </TabsContent>
         </Tabs>
       </div>
-      <Dialog open={addArtistDialogOpen} onOpenChange={setAddArtistDialogOpen}>
+      <Dialog
+        open={addArtistDialogOpen}
+        onOpenChange={(open) => {
+          setAddArtistDialogOpen(open)
+          // Reset the active tab when closing the dialog
+          if (!open) {
+            setActiveTab("library")
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add a Hidden Gem</DialogTitle>

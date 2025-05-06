@@ -1,9 +1,10 @@
 "use client"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,50 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 export default function Navbar() {
   const { user, isAuthenticated, loading, signOut } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
+
+  // Refs for the nav items
+  const libraryLinkRef = useRef(null)
+  const collectionLinkRef = useRef(null)
+
+  // State for the underline position
+  const [underlineStyle, setUnderlineStyle] = useState({
+    left: 0,
+    width: 0,
+    opacity: 0,
+  })
+
+  // Update underline position when path changes
+  useEffect(() => {
+    const updateUnderline = () => {
+      if (pathname === "/library" && libraryLinkRef.current) {
+        const rect = libraryLinkRef.current.getBoundingClientRect()
+        setUnderlineStyle({
+          left: 0,
+          width: rect.width,
+          opacity: 1,
+        })
+      } else if (pathname.startsWith("/profile") && collectionLinkRef.current) {
+        const libraryRect = libraryLinkRef.current?.getBoundingClientRect() || { width: 0 }
+        const rect = collectionLinkRef.current.getBoundingClientRect()
+        setUnderlineStyle({
+          left: libraryRect.width + 16, // 16px is the gap between items
+          width: rect.width,
+          opacity: 1,
+        })
+      } else {
+        setUnderlineStyle({
+          left: 0,
+          width: 0,
+          opacity: 0,
+        })
+      }
+    }
+
+    // Small delay to ensure refs are populated
+    const timer = setTimeout(updateUnderline, 50)
+    return () => clearTimeout(timer)
+  }, [pathname])
 
   const getUserInitials = () => {
     if (!user?.displayName) return "HS"
@@ -35,26 +80,23 @@ export default function Navbar() {
             <span className="text-xl font-bold">Hidden Spins</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-4">
-            <Link
-              href="/library"
-              className={`text-sm font-medium relative ${
-                router.pathname === "/library"
-                  ? 'after:content-[""] after:absolute after:left-0 after:bottom-[-5px] after:h-[2px] after:w-full after:bg-custom-blue after:transition-all after:duration-300'
-                  : ""
-              }`}
-            >
+          <nav className="hidden md:flex items-center gap-4 relative">
+            {/* Animated underline */}
+            <div
+              className="absolute bottom-[-5px] h-[2px] bg-custom-blue transition-all duration-300 ease-in-out"
+              style={{
+                left: underlineStyle.left,
+                width: underlineStyle.width,
+                opacity: underlineStyle.opacity,
+              }}
+            />
+
+            <Link ref={libraryLinkRef} href="/library" className="text-sm font-medium relative">
               Library
             </Link>
+
             {isAuthenticated && (
-              <Link
-                href="/profile"
-                className={`text-sm font-medium relative ${
-                  router.pathname === "/profile"
-                    ? 'after:content-[""] after:absolute after:left-0 after:bottom-[-5px] after:h-[2px] after:w-full after:bg-custom-blue after:transition-all after:duration-300'
-                    : ""
-                }`}
-              >
+              <Link ref={collectionLinkRef} href="/profile" className="text-sm font-medium relative">
                 My Collection
               </Link>
             )}

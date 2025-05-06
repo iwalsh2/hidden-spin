@@ -90,7 +90,7 @@
     @apply bg-background text-foreground;
   }
 
-  /* Add custom hover color for all links */
+  /* Add custom hover color for external links */
   a[href^="http"]:hover,
   a[href^="https"]:hover,
   a[href^="//"]:hover,
