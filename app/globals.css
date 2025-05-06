@@ -100,6 +100,14 @@
   }
 }
 
+@layer components {
+  /* Make TabsList items appear above the sliding highlight */
+  [role="tab"] {
+    position: relative;
+    z-index: 10;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

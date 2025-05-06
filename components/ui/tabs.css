@@ -1,0 +1,15 @@
+/* Custom styles for tabs with sliding highlight */
+.tabs-with-sliding-highlight {
+  position: relative;
+}
+
+.sliding-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: hsl(var(--background));
+  border-radius: var(--radius);
+  transition: transform 0.3s ease;
+  z-index: 0;
+}

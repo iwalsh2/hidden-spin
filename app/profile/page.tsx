@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,40 @@ export default function ProfilePage() {
   const [savedArtists, setSavedArtists] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
+  const [activeTab, setActiveTab] = useState("my-artists")
+
+  // Refs for the tab items
+  const myArtistsTabRef = useRef(null)
+  const savedTabRef = useRef(null)
+
+  // State for the underline position
+  const [underlineStyle, setUnderlineStyle] = useState({
+    left: 0,
+    width: 0,
+  })
+
+  // Update underline position when active tab changes
+  useEffect(() => {
+    const updateUnderline = () => {
+      if (activeTab === "my-artists" && myArtistsTabRef.current) {
+        const rect = myArtistsTabRef.current.getBoundingClientRect()
+        setUnderlineStyle({
+          left: rect.left - (myArtistsTabRef.current.parentElement?.getBoundingClientRect().left || 0),
+          width: rect.width,
+        })
+      } else if (activeTab === "saved" && savedTabRef.current) {
+        const rect = savedTabRef.current.getBoundingClientRect()
+        setUnderlineStyle({
+          left: rect.left - (savedTabRef.current.parentElement?.getBoundingClientRect().left || 0),
+          width: rect.width,
+        })
+      }
+    }
+
+    // Small delay to ensure refs are populated
+    const timer = setTimeout(updateUnderline, 50)
+    return () => clearTimeout(timer)
+  }, [activeTab])
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -174,11 +208,26 @@ export default function ProfilePage() {
           </div>
 
           <div className="md:w-2/3">
-            <Tabs defaultValue="my-artists">
-              <TabsList>
-                <TabsTrigger value="my-artists">My Artists</TabsTrigger>
-                <TabsTrigger value="saved">Saved</TabsTrigger>
-              </TabsList>
+            <Tabs defaultValue="my-artists" value={activeTab} onValueChange={setActiveTab}>
+              <div className="relative">
+                <TabsList className="relative">
+                  <TabsTrigger ref={myArtistsTabRef} value="my-artists">
+                    My Artists
+                  </TabsTrigger>
+                  <TabsTrigger ref={savedTabRef} value="saved">
+                    Saved
+                  </TabsTrigger>
+
+                  {/* Sliding highlight element */}
+                  <div
+                    className="absolute top-0 bottom-0 rounded-md bg-background transition-all duration-300 ease-in-out"
+                    style={{
+                      left: underlineStyle.left,
+                      width: underlineStyle.width,
+                    }}
+                  />
+                </TabsList>
+              </div>
 
               <TabsContent value="my-artists" className="pt-4">
                 <h2 className="text-2xl font-bold mb-4">Artists You've Added</h2>
