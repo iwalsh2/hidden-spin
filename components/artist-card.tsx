@@ -207,7 +207,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 href={artist.streamingPlatforms?.[0]?.url || artist.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:text-primary/80 transition-colors"
+                className="text-primary external-link transition-colors"
                 onClick={handleActionClick}
               >
                 <ExternalLink className="h-5 w-5" />
@@ -264,7 +264,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                           href={platform.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1"
+                          className="text-primary external-link hover:underline flex items-center gap-1"
                         >
                           {platform.name} <ExternalLink className="h-3 w-3" />
                         </a>
@@ -275,7 +275,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                       href={artist.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center gap-1"
+                      className="text-primary external-link hover:underline flex items-center gap-1"
                     >
                       Listen on {artist.platform} <ExternalLink className="h-3 w-3" />
                     </a>
@@ -296,7 +296,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                           href={artist.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary"
+                          className="text-muted-foreground external-link hover:text-primary"
                           title="Website"
                         >
                           <svg
@@ -321,7 +321,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                           href={artist.youtube}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary"
+                          className="text-muted-foreground external-link hover:text-primary"
                           title="YouTube"
                         >
                           <svg
@@ -345,7 +345,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                           href={artist.instagram}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary"
+                          className="text-muted-foreground external-link hover:text-primary"
                           title="Instagram"
                         >
                           <svg
@@ -370,7 +370,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                           href={artist.facebook}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary"
+                          className="text-muted-foreground external-link hover:text-primary"
                           title="Facebook"
                         >
                           <svg
@@ -393,7 +393,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                           href={artist.x}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary"
+                          className="text-muted-foreground external-link hover:text-primary"
                           title="X"
                         >
                           <svg
@@ -416,7 +416,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                           href={artist.tiktok}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary"
+                          className="text-muted-foreground external-link hover:text-primary"
                           title="TikTok"
                         >
                           <svg

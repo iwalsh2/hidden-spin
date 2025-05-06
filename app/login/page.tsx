@@ -12,9 +12,6 @@ import { useToast } from "@/components/ui/use-toast"
 import Script from "next/script"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { doc, getDoc, setDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import { auth } from "@/lib/firebase"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -69,28 +66,16 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
     setIsLoading(true)
-  
-    // ... your existing validation logic ...
-  
+
+    // Validate inputs
+    if (!email.trim() || !password.trim()) {
+      setError("Email and password are required")
+      setIsLoading(false)
+      return
+    }
+
     try {
       await signInWithEmail(email, password)
-  
-      // **NEW: ensure Firestore user doc exists**
-      const currentUser = auth.currentUser
-      if (currentUser) {
-        const userRef = doc(db, "users", currentUser.uid)
-        const snap = await getDoc(userRef)
-        if (!snap.exists()) {
-          await setDoc(userRef, {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName || "",
-            photoURL: currentUser.photoURL || null,
-            createdAt: new Date().toISOString(),
-          })
-        }
-      }
-  
       toast({
         title: "Login successful",
         description: "Welcome back to Hidden Spins!",
@@ -102,7 +87,6 @@ export default function LoginPage() {
       setIsLoading(false)
     }
   }
-  
 
   const handleSignUp = async (e) => {
     e.preventDefault()

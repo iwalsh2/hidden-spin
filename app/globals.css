@@ -44,7 +44,7 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 0 0% 0%; /* Changed to black */
     --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
@@ -91,7 +91,11 @@
   }
 
   /* Add custom hover color for all links */
-  a:hover {
+  a[href^="http"]:hover,
+  a[href^="https"]:hover,
+  a[href^="//"]:hover,
+  a[target="_blank"]:hover,
+  .external-link:hover {
     color: #415da6 !important;
   }
 }
