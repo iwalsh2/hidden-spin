@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import AddArtistForm from "@/components/add-artist-form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ThemeProvider } from "@/components/theme-provider"
 
 export default function ProfilePage() {
   const { user, isAuthenticated, loading } = useAuth()
@@ -43,31 +44,52 @@ export default function ProfilePage() {
 
   // Update highlight position when active tab changes
   useEffect(() => {
+    let animationFrameId
+
     const updateHighlight = () => {
-      if (activeTab === "my-artists" && myArtistsTabRef.current) {
-        const rect = myArtistsTabRef.current.getBoundingClientRect()
-        setHighlightStyle({
-          left: rect.left - (myArtistsTabRef.current.parentElement?.getBoundingClientRect().left || 0),
-          width: rect.width,
-        })
-      } else if (activeTab === "saved" && savedTabRef.current) {
-        const rect = savedTabRef.current.getBoundingClientRect()
-        setHighlightStyle({
-          left: rect.left - (savedTabRef.current.parentElement?.getBoundingClientRect().left || 0),
-          width: rect.width,
-        })
-      } else if (activeTab === "drafts" && draftedTabRef.current) {
-        const rect = draftedTabRef.current.getBoundingClientRect()
-        setHighlightStyle({
-          left: rect.left - (draftedTabRef.current.parentElement?.getBoundingClientRect().left || 0),
-          width: rect.width,
-        })
+      // Cancel any pending animation frame
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
       }
+
+      // Schedule the update in the next animation frame
+      animationFrameId = requestAnimationFrame(() => {
+        if (activeTab === "my-artists" && myArtistsTabRef.current) {
+          const rect = myArtistsTabRef.current.getBoundingClientRect()
+          const parentRect = myArtistsTabRef.current.parentElement?.getBoundingClientRect() || { left: 0 }
+          setHighlightStyle({
+            left: rect.left - parentRect.left,
+            width: rect.width,
+          })
+        } else if (activeTab === "saved" && savedTabRef.current) {
+          const rect = savedTabRef.current.getBoundingClientRect()
+          const parentRect = savedTabRef.current.parentElement?.getBoundingClientRect() || { left: 0 }
+          setHighlightStyle({
+            left: rect.left - parentRect.left,
+            width: rect.width,
+          })
+        } else if (activeTab === "drafts" && draftedTabRef.current) {
+          const rect = draftedTabRef.current.getBoundingClientRect()
+          const parentRect = draftedTabRef.current.parentElement?.getBoundingClientRect() || { left: 0 }
+          setHighlightStyle({
+            left: rect.left - parentRect.left,
+            width: rect.width,
+          })
+        }
+      })
     }
 
     // Small delay to ensure refs are populated
     const timer = setTimeout(updateHighlight, 50)
-    return () => clearTimeout(timer)
+
+    // Add resize event listener to handle window resizing
+    window.addEventListener("resize", updateHighlight)
+
+    return () => {
+      clearTimeout(timer)
+      cancelAnimationFrame(animationFrameId)
+      window.removeEventListener("resize", updateHighlight)
+    }
   }, [activeTab])
 
   // Redirect to login if not authenticated
@@ -295,7 +317,7 @@ export default function ProfilePage() {
           <div className="md:w-2/3">
             <Tabs defaultValue="my-artists" value={activeTab} onValueChange={setActiveTab}>
               <div className="relative">
-                <TabsList className="relative">
+                <TabsList className="relative z-10">
                   <TabsTrigger ref={myArtistsTabRef} value="my-artists">
                     My Artists
                   </TabsTrigger>
@@ -305,16 +327,17 @@ export default function ProfilePage() {
                   <TabsTrigger ref={draftedTabRef} value="drafts">
                     Drafted
                   </TabsTrigger>
-
-                  {/* Sliding highlight element */}
-                  <div
-                    className="absolute top-0 bottom-0 rounded-md bg-background transition-all duration-300 ease-in-out"
-                    style={{
-                      left: highlightStyle.left,
-                      width: highlightStyle.width,
-                    }}
-                  />
                 </TabsList>
+
+                {/* Sliding highlight element with fixed positioning */}
+                <div
+                  className="absolute top-0 bottom-0 rounded-md bg-background transition-all duration-300 ease-in-out"
+                  style={{
+                    left: `${highlightStyle.left}px`,
+                    width: `${highlightStyle.width}px`,
+                    transform: "translateZ(0)", // Force GPU acceleration
+                  }}
+                />
               </div>
 
               <TabsContent value="my-artists" className="pt-4">
@@ -390,7 +413,14 @@ export default function ProfilePage() {
                       <p className="text-sm text-muted-foreground mt-1">
                         When you save artist drafts, they'll appear here.
                       </p>
-                      <Button variant="outline" className="mt-4" onClick={() => router.push("/library")}>
+                      <Button
+                        variant="outline"
+                        className="mt-4"
+                        onClick={() => {
+                          setSelectedDraft(null)
+                          setEditDraftDialogOpen(true)
+                        }}
+                      >
                         Add an Artist
                       </Button>
                     </CardContent>
@@ -413,22 +443,24 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Draft edit dialog */}
+      {/* Draft edit dialog - Wrapped with ThemeProvider to preserve theme */}
       <Dialog
         open={editDraftDialogOpen}
         onOpenChange={(open) => {
-          if (!open && !isProcessingDraft) {
-            setEditDraftDialogOpen(false)
-            setSelectedDraft(null)
+          if (!isProcessingDraft) {
+            setEditDraftDialogOpen(open)
+            if (!open) {
+              setSelectedDraft(null)
+            }
           }
         }}
       >
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Continue Editing Draft</DialogTitle>
+            <DialogTitle>{selectedDraft ? "Continue Editing Draft" : "Add a Hidden Gem"}</DialogTitle>
           </DialogHeader>
-          {selectedDraft && (
-            <>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {selectedDraft ? (
               <Alert className="mb-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
@@ -436,15 +468,15 @@ export default function ProfilePage() {
                   will be removed.
                 </AlertDescription>
               </Alert>
-              <AddArtistForm
-                onAddArtist={handleDraftSubmit}
-                usedGenres={[]}
-                currentUser={user}
-                isAddingArtist={isProcessingDraft}
-                initialData={selectedDraft}
-              />
-            </>
-          )}
+            ) : null}
+            <AddArtistForm
+              onAddArtist={handleDraftSubmit}
+              usedGenres={[]}
+              currentUser={user}
+              isAddingArtist={isProcessingDraft}
+              initialData={selectedDraft}
+            />
+          </ThemeProvider>
         </DialogContent>
       </Dialog>
     </div>

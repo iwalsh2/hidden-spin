@@ -1,17 +1,25 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/router"
 import { format, formatDistanceToNow } from "date-fns"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Edit, Trash, Clock, Music2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function DraftArtistCard({ draft, onEdit, onDelete }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const router = useRouter()
 
   const formatDate = (dateString) => {
     if (!dateString) return "Unknown date"
@@ -33,6 +41,11 @@ export default function DraftArtistCard({ draft, onEdit, onDelete }) {
     } catch (e) {
       return ""
     }
+  }
+
+  const handleDelete = () => {
+    onDelete(draft.id)
+    setIsDeleteDialogOpen(false)
   }
 
   return (
@@ -103,6 +116,24 @@ export default function DraftArtistCard({ draft, onEdit, onDelete }) {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Draft</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this draft? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

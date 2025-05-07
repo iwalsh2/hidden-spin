@@ -32,34 +32,52 @@ export default function Navbar() {
 
   // Update underline position when path changes
   useEffect(() => {
+    let animationFrameId
+
     const updateUnderline = () => {
-      if (pathname === "/library" && libraryLinkRef.current) {
-        const rect = libraryLinkRef.current.getBoundingClientRect()
-        setUnderlineStyle({
-          left: 0,
-          width: rect.width,
-          opacity: 1,
-        })
-      } else if (pathname.startsWith("/profile") && collectionLinkRef.current) {
-        const libraryRect = libraryLinkRef.current?.getBoundingClientRect() || { width: 0 }
-        const rect = collectionLinkRef.current.getBoundingClientRect()
-        setUnderlineStyle({
-          left: libraryRect.width + 16, // 16px is the gap between items
-          width: rect.width,
-          opacity: 1,
-        })
-      } else {
-        setUnderlineStyle({
-          left: 0,
-          width: 0,
-          opacity: 0,
-        })
+      // Cancel any pending animation frame
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
       }
+
+      // Schedule the update in the next animation frame
+      animationFrameId = requestAnimationFrame(() => {
+        if (pathname === "/library" && libraryLinkRef.current) {
+          const rect = libraryLinkRef.current.getBoundingClientRect()
+          setUnderlineStyle({
+            left: 0,
+            width: rect.width,
+            opacity: 1,
+          })
+        } else if (pathname.startsWith("/profile") && collectionLinkRef.current) {
+          const libraryRect = libraryLinkRef.current?.getBoundingClientRect() || { width: 0 }
+          const rect = collectionLinkRef.current.getBoundingClientRect()
+          setUnderlineStyle({
+            left: libraryRect.width + 16, // 16px is the gap between items
+            width: rect.width,
+            opacity: 1,
+          })
+        } else {
+          setUnderlineStyle({
+            left: 0,
+            width: 0,
+            opacity: 0,
+          })
+        }
+      })
     }
 
     // Small delay to ensure refs are populated
     const timer = setTimeout(updateUnderline, 50)
-    return () => clearTimeout(timer)
+
+    // Add resize event listener to handle window resizing
+    window.addEventListener("resize", updateUnderline)
+
+    return () => {
+      clearTimeout(timer)
+      cancelAnimationFrame(animationFrameId)
+      window.removeEventListener("resize", updateUnderline)
+    }
   }, [pathname])
 
   const getUserInitials = () => {

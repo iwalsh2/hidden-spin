@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/components/ui/use-toast"
+import { useTheme } from "next-themes"
 
 // Sample genres for suggestions
 const SAMPLE_GENRES = ["Rock", "Pop", "Country", "Jazz", "Pop Punk", "Rap"]
@@ -35,6 +36,7 @@ export default function AddArtistForm({
   isAddingArtist,
   initialData = null,
 }) {
+  const { theme } = useTheme()
   const [artistName, setArtistName] = useState(initialData?.name || "")
   const [genre, setGenre] = useState(initialData?.genre || "")
   const [customGenre, setCustomGenre] = useState("")
@@ -84,8 +86,15 @@ export default function AddArtistForm({
     if (hasData && !initialData) {
       setShowExitDialog(true)
     } else {
-      // If no data, just exit
-      window.history.back()
+      // If no data or editing an existing draft, just exit
+      if (window.history.length > 1) {
+        window.history.back()
+      } else {
+        // If we can't go back (e.g., in a dialog), just close the form
+        if (typeof onSaveDraft === "function") {
+          onSaveDraft(null) // Pass null to indicate cancellation
+        }
+      }
     }
   }
 
@@ -416,6 +425,12 @@ export default function AddArtistForm({
     }
   }
 
+  // Handle exiting without saving
+  const handleExitWithoutSaving = () => {
+    setShowExitDialog(false)
+    window.history.back()
+  }
+
   // Handle form submission
   const handleSubmit = async () => {
     if (streamingPlatforms.length === 0 || !streamingPlatforms[0].url.trim()) {
@@ -498,6 +513,9 @@ export default function AddArtistForm({
 
   // All available genres (sample + used)
   const allGenres = [...new Set([...SAMPLE_GENRES, ...usedGenres])].sort()
+
+  // Determine the appropriate class for the AlertDialogContent based on the current theme
+  const alertDialogContentClass = theme === "dark" ? "dark:bg-background dark:text-foreground dark:border-border" : ""
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -823,9 +841,9 @@ export default function AddArtistForm({
         </div>
       </CardContent>
 
-      {/* Exit confirmation dialog */}
+      {/* Exit confirmation dialog - Now using the theme context */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className={`${alertDialogContentClass}`}>
           <AlertDialogHeader>
             <AlertDialogTitle>Save your draft?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -833,7 +851,9 @@ export default function AddArtistForm({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={savingDraft}>Exit without saving</AlertDialogCancel>
+            <AlertDialogCancel onClick={handleExitWithoutSaving} disabled={savingDraft}>
+              Exit without saving
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleSaveDraft}
               disabled={savingDraft}

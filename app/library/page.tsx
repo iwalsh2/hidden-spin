@@ -43,25 +43,45 @@ export default function Library() {
 
   // Update underline position when active tab changes
   useEffect(() => {
-    const updateUnderline = () => {
-      if (activeTab === "library" && libraryTabRef.current) {
-        const rect = libraryTabRef.current.getBoundingClientRect()
-        setUnderlineStyle({
-          left: rect.left - (libraryTabRef.current.parentElement?.getBoundingClientRect().left || 0),
-          width: rect.width,
-        })
-      } else if (addArtistDialogOpen && addArtistButtonRef.current) {
-        const rect = addArtistButtonRef.current.getBoundingClientRect()
-        setUnderlineStyle({
-          left: rect.left - (addArtistButtonRef.current.parentElement?.getBoundingClientRect().left || 0),
-          width: rect.width,
-        })
+    let animationFrameId
+
+    const updateHighlight = () => {
+      // Cancel any pending animation frame
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
       }
+
+      // Schedule the update in the next animation frame
+      animationFrameId = requestAnimationFrame(() => {
+        if (activeTab === "library" && libraryTabRef.current) {
+          const rect = libraryTabRef.current.getBoundingClientRect()
+          const parentRect = libraryTabRef.current.parentElement?.getBoundingClientRect() || { left: 0 }
+          setUnderlineStyle({
+            left: rect.left - parentRect.left,
+            width: rect.width,
+          })
+        } else if (addArtistDialogOpen && addArtistButtonRef.current) {
+          const rect = addArtistButtonRef.current.getBoundingClientRect()
+          const parentRect = addArtistButtonRef.current.parentElement?.getBoundingClientRect() || { left: 0 }
+          setUnderlineStyle({
+            left: rect.left - parentRect.left,
+            width: rect.width,
+          })
+        }
+      })
     }
 
     // Small delay to ensure refs are populated
-    const timer = setTimeout(updateUnderline, 50)
-    return () => clearTimeout(timer)
+    const timer = setTimeout(updateHighlight, 50)
+
+    // Add resize event listener to handle window resizing
+    window.addEventListener("resize", updateHighlight)
+
+    return () => {
+      clearTimeout(timer)
+      cancelAnimationFrame(animationFrameId)
+      window.removeEventListener("resize", updateHighlight)
+    }
   }, [activeTab, addArtistDialogOpen])
 
   // Add a function to sort genres alphabetically
@@ -300,7 +320,7 @@ export default function Library() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
             <div className="relative">
-              <TabsList className="flex justify-center">
+              <TabsList className="relative z-10">
                 <TabsTrigger ref={libraryTabRef} value="library" className="flex-1 min-w-[120px]">
                   Public Library
                 </TabsTrigger>
@@ -314,12 +334,13 @@ export default function Library() {
                 </Button>
               </TabsList>
 
-              {/* Animated underline */}
+              {/* Animated underline - now with fixed positioning */}
               <div
                 className="absolute bottom-0 h-[2px] bg-custom-blue transition-all duration-300 ease-in-out"
                 style={{
-                  left: underlineStyle.left,
-                  width: underlineStyle.width,
+                  left: `${underlineStyle.left}px`,
+                  width: `${underlineStyle.width}px`,
+                  transform: "translateZ(0)", // Force GPU acceleration
                 }}
               />
             </div>
