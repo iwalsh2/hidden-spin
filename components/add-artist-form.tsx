@@ -11,30 +11,55 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { centerCrop, makeAspectCrop } from "react-image-crop"
 import "react-image-crop/dist/ReactCrop.css"
 import { STREAMING_PLATFORMS, detectPlatformFromUrl } from "@/lib/platform-utils"
+import { saveDraft } from "@/lib/draft-service"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/components/ui/use-toast"
 
 // Sample genres for suggestions
 const SAMPLE_GENRES = ["Rock", "Pop", "Country", "Jazz", "Pop Punk", "Rap"]
 
-export default function AddArtistForm({ onAddArtist, usedGenres, currentUser, isAddingArtist }) {
-  const [artistName, setArtistName] = useState("")
-  const [genre, setGenre] = useState("")
+export default function AddArtistForm({
+  onAddArtist,
+  onSaveDraft,
+  usedGenres,
+  currentUser,
+  isAddingArtist,
+  initialData = null,
+}) {
+  const [artistName, setArtistName] = useState(initialData?.name || "")
+  const [genre, setGenre] = useState(initialData?.genre || "")
   const [customGenre, setCustomGenre] = useState("")
-  const [isOwnMusic, setIsOwnMusic] = useState(undefined)
+  const [isOwnMusic, setIsOwnMusic] = useState(
+    initialData?.isOwnMusic !== undefined ? (initialData.isOwnMusic ? "yes" : "no") : undefined,
+  )
   const [error, setError] = useState("")
   const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || null)
   const [isDragging, setIsDragging] = useState(false)
-  const [streamingPlatforms, setStreamingPlatforms] = useState([{ name: "Other", url: "" }])
+  const [streamingPlatforms, setStreamingPlatforms] = useState(
+    initialData?.streamingPlatforms || [{ name: "Other", url: "" }],
+  )
   const [newPlatformName, setNewPlatformName] = useState("Other")
   const [newPlatformUrl, setNewPlatformUrl] = useState("")
   const [socialLinks, setSocialLinks] = useState({
-    youtube: "",
-    instagram: "",
-    facebook: "",
-    x: "",
-    tiktok: "",
-    website: "",
+    youtube: initialData?.youtube || "",
+    instagram: initialData?.instagram || "",
+    facebook: initialData?.facebook || "",
+    x: initialData?.x || "",
+    tiktok: initialData?.tiktok || "",
+    website: initialData?.website || "",
   })
+  const [showExitDialog, setShowExitDialog] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
 
   const [crop, setCrop] = useState({ unit: "%", width: 100, aspect: 1 })
   const [completedCrop, setCompletedCrop] = useState(null)
@@ -44,13 +69,54 @@ export default function AddArtistForm({ onAddArtist, usedGenres, currentUser, is
   const nameInputRef = useRef(null)
   const customGenreInputRef = useRef(null)
   const newPlatformUrlRef = useRef(null)
+  const { toast } = useToast()
+
+  // If exiting form is clicked
+  const handleExitClick = () => {
+    // Only show exit dialog if any field has data
+    const hasData =
+      artistName ||
+      genre ||
+      imagePreview ||
+      streamingPlatforms.some((p) => p.url) ||
+      Object.values(socialLinks).some((link) => link)
+
+    if (hasData && !initialData) {
+      setShowExitDialog(true)
+    } else {
+      // If no data, just exit
+      window.history.back()
+    }
+  }
 
   // Auto-focus on artist name input when component mounts
   useEffect(() => {
     if (nameInputRef.current) {
       nameInputRef.current.focus()
     }
-  }, [])
+
+    // Set up beforeunload event to prompt user before leaving page
+    const handleBeforeUnload = (e) => {
+      const hasData =
+        artistName ||
+        genre ||
+        imagePreview ||
+        streamingPlatforms.some((p) => p.url) ||
+        Object.values(socialLinks).some((link) => link)
+
+      if (hasData && !initialData) {
+        e.preventDefault()
+        e.returnValue = ""
+        return ""
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [artistName, genre, imagePreview, streamingPlatforms, socialLinks, initialData])
 
   // Auto-focus on custom genre input when "custom" is selected
   useEffect(() => {
@@ -307,6 +373,49 @@ export default function AddArtistForm({ onAddArtist, usedGenres, currentUser, is
     })
   }
 
+  // Handle saving draft when user exits
+  const handleSaveDraft = async () => {
+    try {
+      setSavingDraft(true)
+
+      const finalGenre = genre === "custom" ? capitalizeGenre(customGenre) : genre
+
+      const draftData = {
+        name: artistName.trim() || "Untitled Artist",
+        genre: finalGenre || "",
+        imageUrl: imagePreview,
+        streamingPlatforms: streamingPlatforms.filter((p) => p.url.trim()),
+        link: streamingPlatforms[0]?.url || "",
+        platform: streamingPlatforms[0]?.name || "Other",
+        createdBy: currentUser?.uid || "anonymous",
+        creatorName: currentUser?.displayName || "Anonymous User",
+        isOwnMusic: isOwnMusic === "yes",
+        ...socialLinks,
+      }
+
+      await saveDraft(draftData)
+
+      toast({
+        title: "Draft saved",
+        description: "Your artist draft has been saved. You can continue editing it later.",
+      })
+
+      setSavingDraft(false)
+      setShowExitDialog(false)
+
+      // Go back
+      window.history.back()
+    } catch (error) {
+      console.error("Error saving draft:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save draft. Please try again.",
+        variant: "destructive",
+      })
+      setSavingDraft(false)
+    }
+  }
+
   // Handle form submission
   const handleSubmit = async () => {
     if (streamingPlatforms.length === 0 || !streamingPlatforms[0].url.trim()) {
@@ -393,7 +502,9 @@ export default function AddArtistForm({ onAddArtist, usedGenres, currentUser, is
   return (
     <Card className="max-w-2xl mx-auto">
       <CardContent className="p-6">
-        <h2 className="text-xl font-semibold mb-4 text-center">Add a Hidden Gem</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">
+          {initialData ? "Edit Draft Artist" : "Add a Hidden Gem"}
+        </h2>
 
         <Alert className="mb-4">
           <AlertCircle className="h-4 w-4" />
@@ -669,34 +780,96 @@ export default function AddArtistForm({ onAddArtist, usedGenres, currentUser, is
             </RadioGroup>
           </div>
 
-          <Button
-            onClick={handleSubmit}
-            disabled={streamingPlatforms.length === 0 || !streamingPlatforms[0].url.trim() || isAddingArtist}
-            className="w-full"
-          >
-            {isAddingArtist ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Adding Artist...
-              </>
-            ) : (
-              "Add to Library"
-            )}
-          </Button>
+          <div className="flex items-center justify-between pt-4">
+            <Button variant="outline" onClick={handleExitClick} disabled={isAddingArtist || savingDraft}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                streamingPlatforms.length === 0 || !streamingPlatforms[0].url.trim() || isAddingArtist || savingDraft
+              }
+              className="ml-auto"
+            >
+              {isAddingArtist ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Adding Artist...
+                </>
+              ) : (
+                "Add to Library"
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
+
+      {/* Exit confirmation dialog */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save your draft?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You've started adding an artist. Would you like to save your progress as a draft for later?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingDraft}>Exit without saving</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSaveDraft}
+              disabled={savingDraft}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {savingDraft ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                "Save as draft"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

@@ -5,10 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/components/auth-provider"
-import { Music2, Loader2 } from "lucide-react"
+import { Music2, Loader2, AlertCircle } from "lucide-react"
 import ArtistCard from "@/components/artist-card"
+import DraftArtistCard from "@/components/draft-artist-card"
 import { getArtistsByUser, getSavedArtistsByUser, updateArtist, deleteArtist } from "@/lib/artist-service"
+import { getDraftsByUser, deleteDraft } from "@/lib/draft-service"
 import { useToast } from "@/components/ui/use-toast"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import AddArtistForm from "@/components/add-artist-form"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function ProfilePage() {
   const { user, isAuthenticated, loading } = useAuth()
@@ -17,40 +22,51 @@ export default function ProfilePage() {
 
   const [userArtists, setUserArtists] = useState([])
   const [savedArtists, setSavedArtists] = useState([])
+  const [draftArtists, setDraftArtists] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [activeTab, setActiveTab] = useState("my-artists")
+  const [selectedDraft, setSelectedDraft] = useState(null)
+  const [editDraftDialogOpen, setEditDraftDialogOpen] = useState(false)
+  const [isProcessingDraft, setIsProcessingDraft] = useState(false)
 
   // Refs for the tab items
   const myArtistsTabRef = useRef(null)
   const savedTabRef = useRef(null)
+  const draftedTabRef = useRef(null)
 
-  // State for the underline position
-  const [underlineStyle, setUnderlineStyle] = useState({
+  // State for the sliding highlight position
+  const [highlightStyle, setHighlightStyle] = useState({
     left: 0,
     width: 0,
   })
 
-  // Update underline position when active tab changes
+  // Update highlight position when active tab changes
   useEffect(() => {
-    const updateUnderline = () => {
+    const updateHighlight = () => {
       if (activeTab === "my-artists" && myArtistsTabRef.current) {
         const rect = myArtistsTabRef.current.getBoundingClientRect()
-        setUnderlineStyle({
+        setHighlightStyle({
           left: rect.left - (myArtistsTabRef.current.parentElement?.getBoundingClientRect().left || 0),
           width: rect.width,
         })
       } else if (activeTab === "saved" && savedTabRef.current) {
         const rect = savedTabRef.current.getBoundingClientRect()
-        setUnderlineStyle({
+        setHighlightStyle({
           left: rect.left - (savedTabRef.current.parentElement?.getBoundingClientRect().left || 0),
+          width: rect.width,
+        })
+      } else if (activeTab === "drafts" && draftedTabRef.current) {
+        const rect = draftedTabRef.current.getBoundingClientRect()
+        setHighlightStyle({
+          left: rect.left - (draftedTabRef.current.parentElement?.getBoundingClientRect().left || 0),
           width: rect.width,
         })
       }
     }
 
     // Small delay to ensure refs are populated
-    const timer = setTimeout(updateUnderline, 50)
+    const timer = setTimeout(updateHighlight, 50)
     return () => clearTimeout(timer)
   }, [activeTab])
 
@@ -61,7 +77,7 @@ export default function ProfilePage() {
     }
   }, [isAuthenticated, loading, router])
 
-  // Load user's artists and saved artists
+  // Load user's artists, saved artists, and drafts
   useEffect(() => {
     const loadUserData = async () => {
       if (!user) return
@@ -78,13 +94,17 @@ export default function ProfilePage() {
         const savedArtistsData = await getSavedArtistsByUser(user.uid)
         setSavedArtists(savedArtistsData)
 
+        // Get drafts
+        const draftsData = await getDraftsByUser(user.uid)
+        setDraftArtists(draftsData)
+
         setIsLoading(false)
       } catch (error) {
         console.error("Error loading user data:", error)
         setLoadError(error.message || "Failed to load your artists")
         toast({
           title: "Error",
-          description: "Failed to load your artists. Please try again.",
+          description: "Failed to load your data. Please try again.",
           variant: "destructive",
         })
         setIsLoading(false)
@@ -139,6 +159,71 @@ export default function ProfilePage() {
         description: "Failed to delete artist. Please try again.",
         variant: "destructive",
       })
+    }
+  }
+
+  // Handle draft edit
+  const handleEditDraft = (draft) => {
+    setSelectedDraft(draft)
+    setEditDraftDialogOpen(true)
+  }
+
+  // Handle draft delete
+  const handleDeleteDraft = async (draftId) => {
+    try {
+      setIsProcessingDraft(true)
+      await deleteDraft(draftId)
+
+      // Update local state
+      setDraftArtists(draftArtists.filter((d) => d.id !== draftId))
+
+      toast({
+        title: "Success",
+        description: "Draft deleted successfully",
+      })
+      setIsProcessingDraft(false)
+    } catch (error) {
+      console.error("Error deleting draft:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete draft. Please try again.",
+        variant: "destructive",
+      })
+      setIsProcessingDraft(false)
+    }
+  }
+
+  // Handle submitting the edited draft as a new artist
+  const handleDraftSubmit = async (artistData) => {
+    try {
+      setIsProcessingDraft(true)
+
+      // Add the artist (this will be called from the AddArtistForm)
+      // After successful submission, delete the draft
+      if (selectedDraft && selectedDraft.id) {
+        await deleteDraft(selectedDraft.id)
+
+        // Update local state
+        setDraftArtists(draftArtists.filter((d) => d.id !== selectedDraft.id))
+      }
+
+      setEditDraftDialogOpen(false)
+      setSelectedDraft(null)
+      setIsProcessingDraft(false)
+
+      // Switch to "My Artists" tab after successful submission
+      setActiveTab("my-artists")
+
+      return true
+    } catch (error) {
+      console.error("Error processing draft:", error)
+      toast({
+        title: "Error",
+        description: "Failed to process draft. Please try again.",
+        variant: "destructive",
+      })
+      setIsProcessingDraft(false)
+      return false
     }
   }
 
@@ -217,13 +302,16 @@ export default function ProfilePage() {
                   <TabsTrigger ref={savedTabRef} value="saved">
                     Saved
                   </TabsTrigger>
+                  <TabsTrigger ref={draftedTabRef} value="drafts">
+                    Drafted
+                  </TabsTrigger>
 
                   {/* Sliding highlight element */}
                   <div
                     className="absolute top-0 bottom-0 rounded-md bg-background transition-all duration-300 ease-in-out"
                     style={{
-                      left: underlineStyle.left,
-                      width: underlineStyle.width,
+                      left: highlightStyle.left,
+                      width: highlightStyle.width,
                     }}
                   />
                 </TabsList>
@@ -290,10 +378,75 @@ export default function ProfilePage() {
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="drafts" className="pt-4">
+                <h2 className="text-2xl font-bold mb-4">Drafted Artists</h2>
+
+                {draftArtists.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <Music2 className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+                      <h3 className="text-lg font-medium">No draft artists</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        When you save artist drafts, they'll appear here.
+                      </p>
+                      <Button variant="outline" className="mt-4" onClick={() => router.push("/library")}>
+                        Add an Artist
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {draftArtists.map((draft) => (
+                      <DraftArtistCard
+                        key={draft.id}
+                        draft={draft}
+                        onEdit={handleEditDraft}
+                        onDelete={handleDeleteDraft}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           </div>
         </div>
       </div>
+
+      {/* Draft edit dialog */}
+      <Dialog
+        open={editDraftDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isProcessingDraft) {
+            setEditDraftDialogOpen(false)
+            setSelectedDraft(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Continue Editing Draft</DialogTitle>
+          </DialogHeader>
+          {selectedDraft && (
+            <>
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  You're editing a saved draft. When you submit, the artist will be added to the library and the draft
+                  will be removed.
+                </AlertDescription>
+              </Alert>
+              <AddArtistForm
+                onAddArtist={handleDraftSubmit}
+                usedGenres={[]}
+                currentUser={user}
+                isAddingArtist={isProcessingDraft}
+                initialData={selectedDraft}
+              />
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

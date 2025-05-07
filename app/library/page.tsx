@@ -388,11 +388,11 @@ export default function Library() {
       <Dialog
         open={addArtistDialogOpen}
         onOpenChange={(open) => {
-          setAddArtistDialogOpen(open)
-          // Reset the active tab when closing the dialog
-          if (!open) {
-            setActiveTab("library")
+          if (open) {
+            setAddArtistDialogOpen(true)
           }
+          // Don't auto-close when the dialog is requested to close
+          // The AddArtistForm component will handle closing via the exit dialog or form submission
         }}
       >
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
