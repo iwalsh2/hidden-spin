@@ -31,6 +31,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [isLinksDialogOpen, setIsLinksDialogOpen] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -55,6 +56,20 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
   const navigateToUserProfile = (userId) => {
     if (userId) {
       router.push(`/profile/${userId}`)
+    }
+  }
+
+  // Handle external link click to show links dialog
+  const handleExternalLinkClick = (e) => {
+    e.stopPropagation()
+    setIsLinksDialogOpen(true)
+  }
+
+  // Open the selected link in a new tab
+  const openLink = (url) => {
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer")
+      setIsLinksDialogOpen(false)
     }
   }
 
@@ -203,15 +218,15 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                   </svg>
                 </Button>
               )}
-              <a
-                href={artist.streamingPlatforms?.[0]?.url || artist.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary external-link transition-colors"
-                onClick={handleActionClick}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary external-link transition-colors"
+                onClick={handleExternalLinkClick}
+                title="Open links"
               >
                 <ExternalLink className="h-5 w-5" />
-              </a>
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -249,7 +264,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                   <Badge variant="secondary" className="rounded-full">
                     {artist.genre}
                   </Badge>
-                  <span className="text-sm text-muted-foreground">{artist.platform}</span>
+                  {/* Removed platform name display here */}
                 </div>
               </div>
 
@@ -460,6 +475,126 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 </DialogClose>
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Links Dialog */}
+      <Dialog open={isLinksDialogOpen} onOpenChange={setIsLinksDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Open Artist Link</DialogTitle>
+            <DialogDescription>Choose which platform to open for {artist.name}</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            {artist.streamingPlatforms && artist.streamingPlatforms.length > 0 ? (
+              artist.streamingPlatforms.map((platform, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="w-full justify-start text-left"
+                  onClick={() => openLink(platform.url)}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  {platform.name}
+                </Button>
+              ))
+            ) : artist.link ? (
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left"
+                onClick={() => openLink(artist.link)}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                {artist.platform || "Listen"}
+              </Button>
+            ) : (
+              <p className="text-center text-muted-foreground">No streaming links available</p>
+            )}
+
+            {/* Add social media links if available */}
+            {(artist.youtube || artist.website || artist.instagram || artist.facebook || artist.x || artist.tiktok) && (
+              <>
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-background px-2 text-xs text-muted-foreground">Social Media</span>
+                  </div>
+                </div>
+
+                {artist.youtube && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left"
+                    onClick={() => openLink(artist.youtube)}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    YouTube
+                  </Button>
+                )}
+
+                {artist.website && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left"
+                    onClick={() => openLink(artist.website)}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Website
+                  </Button>
+                )}
+
+                {artist.instagram && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left"
+                    onClick={() => openLink(artist.instagram)}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Instagram
+                  </Button>
+                )}
+
+                {artist.facebook && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left"
+                    onClick={() => openLink(artist.facebook)}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Facebook
+                  </Button>
+                )}
+
+                {artist.x && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left"
+                    onClick={() => openLink(artist.x)}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />X
+                  </Button>
+                )}
+
+                {artist.tiktok && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left"
+                    onClick={() => openLink(artist.tiktok)}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    TikTok
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
           </div>
         </DialogContent>
       </Dialog>
