@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/auth-provider"
-import { Music2, ArrowLeft } from "lucide-react"
+import { Music2, ArrowLeft, Loader2 } from "lucide-react"
 import ArtistCard from "@/components/artist-card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getArtistsByUser } from "@/lib/artist-service"
@@ -65,15 +65,10 @@ export default function UserProfilePage({ params }) {
   // If still loading, show loading state
   if (isLoading) {
     return (
-      <div className="container py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center py-12">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="rounded-full bg-gray-200 dark:bg-gray-700 h-24 w-24 mb-4"></div>
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64"></div>
-            </div>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-2xl font-bold">Loading...</h2>
         </div>
       </div>
     )

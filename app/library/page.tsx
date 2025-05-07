@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Music2, Plus, Search, Filter } from "lucide-react"
+import { Music2, Plus, Search, Filter, Loader2 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import ArtistCard from "@/components/artist-card"
 import { useToast } from "@/components/ui/use-toast"
@@ -178,7 +178,8 @@ export default function Library() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Loading...</h2>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-2xl font-bold">Loading...</h2>
         </div>
       </div>
     )
