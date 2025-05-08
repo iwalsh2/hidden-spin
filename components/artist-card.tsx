@@ -274,15 +274,15 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                   {artist.streamingPlatforms && artist.streamingPlatforms.length > 0 ? (
                     <div className="flex flex-col gap-2">
                       {artist.streamingPlatforms.map((platform, index) => (
-                        <a
+                        <Button
                           key={index}
-                          href={platform.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary external-link hover:underline flex items-center gap-1"
+                          variant="outline"
+                          className="w-full justify-center text-center"
+                          onClick={() => openLink(platform.url)}
                         >
-                          {platform.name} <ExternalLink className="h-3 w-3" />
-                        </a>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {platform.name}
+                        </Button>
                       ))}
                     </div>
                   ) : (
@@ -481,18 +481,18 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
 
       {/* New Links Dialog */}
       <Dialog open={isLinksDialogOpen} onOpenChange={setIsLinksDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[400px] max-h-[80vh]">
+          <DialogHeader className="text-center">
             <DialogTitle>Open Artist Link</DialogTitle>
             <DialogDescription>Choose which platform to open for {artist.name}</DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-3">
+          <div className="py-4 space-y-3 overflow-y-auto max-h-[50vh]">
             {artist.streamingPlatforms && artist.streamingPlatforms.length > 0 ? (
               artist.streamingPlatforms.map((platform, index) => (
                 <Button
                   key={index}
                   variant="outline"
-                  className="w-full justify-start text-left"
+                  className="w-full justify-center text-center"
                   onClick={() => openLink(platform.url)}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
@@ -502,7 +502,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
             ) : artist.link ? (
               <Button
                 variant="outline"
-                className="w-full justify-start text-left"
+                className="w-full justify-center text-center"
                 onClick={() => openLink(artist.link)}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
@@ -527,7 +527,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 {artist.youtube && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left"
+                    className="w-full justify-center text-center"
                     onClick={() => openLink(artist.youtube)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -538,7 +538,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 {artist.website && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left"
+                    className="w-full justify-center text-center"
                     onClick={() => openLink(artist.website)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -549,7 +549,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 {artist.instagram && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left"
+                    className="w-full justify-center text-center"
                     onClick={() => openLink(artist.instagram)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -560,7 +560,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 {artist.facebook && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left"
+                    className="w-full justify-center text-center"
                     onClick={() => openLink(artist.facebook)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -571,7 +571,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 {artist.x && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left"
+                    className="w-full justify-center text-center"
                     onClick={() => openLink(artist.x)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />X
@@ -581,7 +581,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 {artist.tiktok && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left"
+                    className="w-full justify-center text-center"
                     onClick={() => openLink(artist.tiktok)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
@@ -591,7 +591,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
               </>
             )}
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-2 border-t">
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>

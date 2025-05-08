@@ -50,7 +50,7 @@ export default function ProfileSettingsPage() {
     if (user) {
       setDisplayName(user.displayName || "")
       setEmail(user.email || "")
-      setProfileImage(user.photoURL || "")
+      setProfileImage(user.photoURL || "/images/default-avatar.png")
     }
   }, [user])
 
@@ -230,7 +230,7 @@ export default function ProfileSettingsPage() {
                   <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                     <div className="flex flex-col items-center gap-2">
                       <Avatar className="h-24 w-24">
-                        <AvatarImage src={profileImage || "/placeholder.svg"} alt={displayName} />
+                        <AvatarImage src={profileImage || "/images/default-avatar.png"} alt={displayName} />
                         <AvatarFallback className="text-2xl">
                           {displayName
                             .split(" ")
@@ -451,7 +451,7 @@ export default function ProfileSettingsPage() {
               >
                 <img
                   ref={imgRef}
-                  src={profileImage || "/placeholder.svg"}
+                  src={profileImage || "/images/default-avatar.png"}
                   alt="Upload preview"
                   onLoad={onImageLoad}
                   className="max-h-[400px] object-contain"

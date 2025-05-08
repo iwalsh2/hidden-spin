@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import AddArtistForm from "@/components/add-artist-form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function ProfilePage() {
   const { user, isAuthenticated, loading } = useAuth()
@@ -296,6 +297,22 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  <div className="flex flex-col items-center mb-4">
+                    <Avatar className="h-24 w-24 mb-4">
+                      <AvatarImage
+                        src={user?.photoURL || "/images/default-avatar.png"}
+                        alt={user?.displayName || "User"}
+                      />
+                      <AvatarFallback className="text-2xl">
+                        {user?.displayName
+                          ?.split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .substring(0, 2) || "HS"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   <div>
                     <h3 className="font-medium">Name</h3>
                     <p className="text-muted-foreground">{user?.displayName || "Anonymous User"}</p>

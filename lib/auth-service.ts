@@ -11,6 +11,9 @@ import {
 import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore"
 import { auth, db } from "./firebase"
 
+// Default profile image path
+const DEFAULT_PROFILE_IMAGE = "/images/default-avatar.png"
+
 // Sign up with email and password
 export const signUpWithEmail = async (
   email: string,
@@ -20,10 +23,11 @@ export const signUpWithEmail = async (
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
 
-    // Update profile with display name
+    // Update profile with display name and default avatar
     if (userCredential.user) {
       await updateProfile(userCredential.user, {
         displayName,
+        photoURL: DEFAULT_PROFILE_IMAGE,
       })
 
       // Create user document in Firestore
@@ -31,7 +35,7 @@ export const signUpWithEmail = async (
         uid: userCredential.user.uid,
         email,
         displayName,
-        photoURL: null,
+        photoURL: DEFAULT_PROFILE_IMAGE,
         createdAt: new Date().toISOString(),
       })
     }
@@ -63,11 +67,14 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
     const userDoc = await getDoc(doc(db, "users", userCredential.user.uid))
 
     if (!userDoc.exists()) {
+      // If user doesn't have a photoURL from Google, use our default
+      const photoURL = userCredential.user.photoURL || DEFAULT_PROFILE_IMAGE
+
       await setDoc(doc(db, "users", userCredential.user.uid), {
         uid: userCredential.user.uid,
         email: userCredential.user.email,
         displayName: userCredential.user.displayName,
-        photoURL: userCredential.user.photoURL,
+        photoURL: photoURL,
         createdAt: new Date().toISOString(),
       })
     }

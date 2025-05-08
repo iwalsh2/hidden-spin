@@ -131,7 +131,10 @@ export default function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.photoURL || ""} alt={user?.displayName || "User"} />
+                        <AvatarImage
+                          src={user?.photoURL || "/images/default-avatar.png"}
+                          alt={user?.displayName || "User"}
+                        />
                         <AvatarFallback>{getUserInitials()}</AvatarFallback>
                       </Avatar>
                     </Button>
