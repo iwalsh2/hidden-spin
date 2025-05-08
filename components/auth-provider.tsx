@@ -1,7 +1,7 @@
 "use client"
 import { createContext, useContext, useState, useEffect } from "react"
 import { onAuthStateChanged, type User } from "firebase/auth"
-import { auth } from "@/lib/firebase"
+import { getFirebaseAuth } from "@/lib/firebase"
 import { signInWithEmail, signInWithGoogle, signOut, signUpWithEmail, updateUserProfile } from "@/lib/auth-service"
 
 interface AuthContextType {
@@ -23,11 +23,36 @@ export function AuthProvider({ children }) {
 
   // Listen for auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user)
+    // Only run on client side
+    if (typeof window === "undefined") {
       setLoading(false)
-    })
+      return
+    }
 
+    let unsubscribe = () => {}
+
+    // Initialize auth and set up listener
+    const initAuth = async () => {
+      try {
+        const auth = await getFirebaseAuth()
+        if (auth) {
+          unsubscribe = onAuthStateChanged(auth, (user) => {
+            setUser(user)
+            setLoading(false)
+          })
+        } else {
+          // If auth is not available, set loading to false
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error)
+        setLoading(false)
+      }
+    }
+
+    initAuth()
+
+    // Clean up subscription
     return () => unsubscribe()
   }, [])
 

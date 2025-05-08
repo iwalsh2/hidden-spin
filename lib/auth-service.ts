@@ -9,7 +9,7 @@ import {
   type UserCredential,
 } from "firebase/auth"
 import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore"
-import { auth, db } from "./firebase"
+import { getFirebaseAuth, db } from "./firebase"
 
 // Default profile image path
 const DEFAULT_PROFILE_IMAGE = "/images/default-avatar.png"
@@ -21,6 +21,12 @@ export const signUpWithEmail = async (
   displayName: string,
 ): Promise<UserCredential> => {
   try {
+    // Get auth instance
+    const auth = await getFirebaseAuth()
+    if (!auth) {
+      throw new Error("Firebase auth is not initialized")
+    }
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
 
     // Update profile with display name and default avatar
@@ -50,6 +56,12 @@ export const signUpWithEmail = async (
 // Sign in with email and password
 export const signInWithEmail = async (email: string, password: string): Promise<UserCredential> => {
   try {
+    // Get auth instance
+    const auth = await getFirebaseAuth()
+    if (!auth) {
+      throw new Error("Firebase auth is not initialized")
+    }
+
     return await signInWithEmailAndPassword(auth, email, password)
   } catch (error) {
     console.error("Error signing in:", error)
@@ -60,6 +72,12 @@ export const signInWithEmail = async (email: string, password: string): Promise<
 // Sign in with Google
 export const signInWithGoogle = async (): Promise<UserCredential> => {
   try {
+    // Get auth instance
+    const auth = await getFirebaseAuth()
+    if (!auth) {
+      throw new Error("Firebase auth is not initialized")
+    }
+
     const provider = new GoogleAuthProvider()
     const userCredential = await signInWithPopup(auth, provider)
 
@@ -89,6 +107,12 @@ export const signInWithGoogle = async (): Promise<UserCredential> => {
 // Sign out
 export const signOut = async (): Promise<void> => {
   try {
+    // Get auth instance
+    const auth = await getFirebaseAuth()
+    if (!auth) {
+      throw new Error("Firebase auth is not initialized")
+    }
+
     return await firebaseSignOut(auth)
   } catch (error) {
     console.error("Error signing out:", error)

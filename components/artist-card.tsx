@@ -234,7 +234,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
 
       {/* Artist Details Modal - Adjusted size and content */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden max-h-[85vh] my-auto">
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-y-auto max-h-[85vh] my-auto">
           <div className="relative">
             {artist.imageUrl ? (
               <div className="w-full h-[200px] relative">
@@ -256,7 +256,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
             )}
           </div>
 
-          <div className="p-6 pt-0">
+          <div className="p-6 pt-0 overflow-y-auto">
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-2xl font-bold mt-4">{artist.name}</h2>
@@ -280,7 +280,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                           className="w-full justify-center text-center"
                           onClick={() => openLink(platform.url)}
                         >
-                          <ExternalLink className="h-4 w-4 mr-2" />
                           {platform.name}
                         </Button>
                       ))}
@@ -290,9 +289,9 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                       href={artist.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary external-link hover:underline flex items-center gap-1"
+                      className="text-primary external-link hover:underline"
                     >
-                      Listen on {artist.platform} <ExternalLink className="h-3 w-3" />
+                      Listen on {artist.platform}
                     </a>
                   )}
                 </div>
@@ -495,7 +494,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                   className="w-full justify-center text-center"
                   onClick={() => openLink(platform.url)}
                 >
-                  <ExternalLink className="h-4 w-4 mr-2" />
                   {platform.name}
                 </Button>
               ))
@@ -505,7 +503,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 className="w-full justify-center text-center"
                 onClick={() => openLink(artist.link)}
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
                 {artist.platform || "Listen"}
               </Button>
             ) : (
@@ -530,7 +527,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     className="w-full justify-center text-center"
                     onClick={() => openLink(artist.youtube)}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
                     YouTube
                   </Button>
                 )}
@@ -541,7 +537,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     className="w-full justify-center text-center"
                     onClick={() => openLink(artist.website)}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
                     Website
                   </Button>
                 )}
@@ -552,7 +547,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     className="w-full justify-center text-center"
                     onClick={() => openLink(artist.instagram)}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
                     Instagram
                   </Button>
                 )}
@@ -563,7 +557,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     className="w-full justify-center text-center"
                     onClick={() => openLink(artist.facebook)}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
                     Facebook
                   </Button>
                 )}
@@ -574,7 +567,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     className="w-full justify-center text-center"
                     onClick={() => openLink(artist.x)}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />X
+                    X
                   </Button>
                 )}
 
@@ -584,7 +577,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     className="w-full justify-center text-center"
                     onClick={() => openLink(artist.tiktok)}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
                     TikTok
                   </Button>
                 )}

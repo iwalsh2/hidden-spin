@@ -26,7 +26,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useTheme } from "next-themes"
 
 // Sample genres for suggestions
-const SAMPLE_GENRES = ["Rock", "Pop", "Country", "Jazz", "Pop Punk", "Rap"]
+const SAMPLE_GENRES = ["Rock", "Pop", "Country", "Jazz", "Punk", "Rap"]
 
 export default function AddArtistForm({
   onAddArtist,
