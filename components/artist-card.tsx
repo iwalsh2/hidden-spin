@@ -235,6 +235,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       {/* Artist Details Modal - Adjusted size and content */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-y-auto max-h-[85vh] my-auto">
+          <DialogClose className="absolute right-4 top-4 z-10 text-white hover:text-gray-200" />
           <div className="relative">
             {artist.imageUrl ? (
               <div className="w-full h-[200px] relative">
@@ -481,6 +482,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       {/* New Links Dialog */}
       <Dialog open={isLinksDialogOpen} onOpenChange={setIsLinksDialogOpen}>
         <DialogContent className="sm:max-w-[400px] max-h-[80vh]">
+          <DialogClose className="absolute right-4 top-4 z-10" />
           <DialogHeader className="text-center">
             <DialogTitle>Open Artist Link</DialogTitle>
             <DialogDescription>Choose which platform to open for {artist.name}</DialogDescription>
@@ -594,6 +596,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+          <DialogClose className="absolute right-4 top-4 z-10" />
           <DialogHeader>
             <DialogTitle>Edit Artist Details</DialogTitle>
             <DialogDescription>Update information for {artist.name}</DialogDescription>
