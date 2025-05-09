@@ -148,10 +148,11 @@ export default function ProfilePage() {
       setUserArtists(userArtists.map((a) => (a.id === updatedArtist.id ? updatedArtist : a)))
       setSavedArtists(savedArtists.map((a) => (a.id === updatedArtist.id ? updatedArtist : a)))
 
-      toast({
-        title: "Success",
-        description: "Artist updated successfully",
-      })
+      // Remove success toast notification
+      // toast({
+      //   title: "Success",
+      //   description: "Artist updated successfully",
+      // })
     } catch (error) {
       console.error("Error updating artist:", error)
       toast({

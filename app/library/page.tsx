@@ -221,10 +221,11 @@ export default function Library() {
       console.log("Sending artist update:", validatedArtist)
       await updateArtist(validatedArtist.id, validatedArtist)
 
-      toast({
-        title: "Success",
-        description: "Artist updated successfully",
-      })
+      // Remove success toast notification
+      // toast({
+      //   title: "Success",
+      //   description: "Artist updated successfully",
+      // })
     } catch (error) {
       console.error("Error updating artist:", error)
       toast({

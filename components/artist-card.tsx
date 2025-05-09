@@ -1,8 +1,8 @@
 "use client"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Music2, ExternalLink, User } from "lucide-react"
+import { Music2, ExternalLink, User, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
   Dialog,
@@ -38,6 +38,8 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
   // Add the heart button state
   const [isSaved, setIsSaved] = useState(artist.savedBy?.includes(currentUser?.uid) || false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const heartRef = useRef(null)
 
   // Check if current user is the creator of this artist
   const isCreator = currentUser?.uid === artist.createdBy
@@ -72,6 +74,16 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       setIsLinksDialogOpen(false)
     }
   }
+
+  // Reset animation state after animation completes
+  useEffect(() => {
+    if (isAnimating) {
+      const timer = setTimeout(() => {
+        setIsAnimating(false)
+      }, 500) // Changed from 1000ms to 500ms
+      return () => clearTimeout(timer)
+    }
+  }, [isAnimating])
 
   // Add function to toggle save state
   const handleToggleSave = async (e) => {
@@ -109,6 +121,11 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       const updatedArtist = {
         ...artist,
         savedBy: updatedSavedList,
+      }
+
+      // Trigger animation when saving (not when unsaving)
+      if (!isSaved) {
+        setIsAnimating(true)
       }
 
       setIsSaved(!isSaved)
@@ -170,9 +187,11 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
             </div>
             <div className="flex items-center gap-2">
               <Button
+                ref={heartRef}
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 ${isSaved ? "text-[#415da6]" : "text-muted-foreground hover:text-[#415da6]"}`}
+                className={`h-8 w-8 ${isSaved ? "text-[#415da6]" : "text-muted-foreground hover:text-[#415da6]"} 
+                  ${isAnimating ? "heart-animation" : ""}`}
                 onClick={handleToggleSave}
                 title={isSaved ? "Remove from saved" : "Save artist"}
                 disabled={!currentUser || isSaving}
@@ -187,6 +206,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className={isAnimating ? "heart-pulse" : ""}
                 >
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
@@ -235,7 +255,10 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       {/* Artist Details Modal - Adjusted size and content */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-y-auto max-h-[85vh] my-auto">
-          <DialogClose className="absolute right-4 top-4 z-10 text-white hover:text-gray-200" />
+          <DialogClose className="absolute right-4 top-4 z-10 text-white hover:text-gray-200">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
           <div className="relative">
             {artist.imageUrl ? (
               <div className="w-full h-[200px] relative">
@@ -482,7 +505,10 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       {/* New Links Dialog */}
       <Dialog open={isLinksDialogOpen} onOpenChange={setIsLinksDialogOpen}>
         <DialogContent className="sm:max-w-[400px] max-h-[80vh]">
-          <DialogClose className="absolute right-4 top-4 z-10" />
+          <DialogClose className="absolute right-4 top-4 z-10">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
           <DialogHeader className="text-center">
             <DialogTitle>Open Artist Link</DialogTitle>
             <DialogDescription>Choose which platform to open for {artist.name}</DialogDescription>
@@ -596,7 +622,10 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-          <DialogClose className="absolute right-4 top-4 z-10" />
+          <DialogClose className="absolute right-4 top-4 z-10">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
           <DialogHeader>
             <DialogTitle>Edit Artist Details</DialogTitle>
             <DialogDescription>Update information for {artist.name}</DialogDescription>
@@ -636,6 +665,72 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <style jsx global>{`
+        @keyframes heartBeat {
+          0% {
+            transform: scale(1);
+          }
+          15% {
+            transform: scale(1.3);
+          }
+          30% {
+            transform: scale(0.95);
+          }
+          45% {
+            transform: scale(1.2);
+          }
+          60% {
+            transform: scale(0.95);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        @keyframes heartPulse {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.3);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        .heart-animation {
+          animation: heartBeat 0.5s ease-in-out; /* Changed from 1s to 0.5s */
+        }
+
+        .heart-pulse {
+          animation: heartPulse 0.5s ease-in-out; /* Changed from 1s to 0.5s */
+          transform-origin: center;
+          color: #ff4081;
+        }
+
+        /* Floating hearts animation */
+        @keyframes float {
+          0% {
+            transform: translateY(0) scale(0.8);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateY(-20px) scale(0.2);
+            opacity: 0;
+          }
+        }
+
+        .floating-heart {
+          position: absolute;
+          animation: float 0.5s ease-out forwards; /* Changed from 1s to 0.5s */
+          color: #ff4081;
+        }
+      `}</style>
     </>
   )
 }
