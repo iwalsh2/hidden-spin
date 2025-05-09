@@ -13,8 +13,8 @@ import {
   onSnapshot,
   getDoc,
 } from "firebase/firestore"
-import { ref, uploadString, getDownloadURL } from "firebase/storage"
-import { db, storage } from "./firebase"
+import { db } from "./firebase"
+import { uploadImage, deleteImageMetadata } from "./image-service"
 
 // Get all artists
 export const getAllArtists = async () => {
@@ -81,25 +81,28 @@ export const getSavedArtistsByUser = async (userId: string) => {
   }
 }
 
-// Add a new artist - improved with better error handling
+// Add a new artist - improved with better error handling and ImgBB integration
 export const addArtist = async (artistData) => {
   console.log("Starting to add artist:", artistData.name)
 
   try {
-    // If there's an image, upload it to Firebase Storage
+    // If there's an image, upload it to ImgBB
     let imageUrl = artistData.imageUrl
+    let imageId = null
 
     if (imageUrl && imageUrl.startsWith("data:")) {
-      console.log("Uploading image to Firebase Storage")
+      console.log("Uploading image to ImgBB")
       try {
-        const storageRef = ref(storage, `artist-images/${Date.now()}`)
-        await uploadString(storageRef, imageUrl, "data_url")
-        imageUrl = await getDownloadURL(storageRef)
+        // Upload to ImgBB and store metadata in Firebase
+        const imageData = await uploadImage(imageUrl, artistData.createdBy, null) // We'll update entityId after artist creation
+        imageUrl = imageData.displayUrl
+        imageId = imageData.id
         console.log("Image uploaded successfully:", imageUrl)
       } catch (uploadError) {
-        console.error("Error uploading image to Firebase Storage:", uploadError)
+        console.error("Error uploading image to ImgBB:", uploadError)
         // Continue with null image rather than failing the whole operation
         imageUrl = null
+        imageId = null
       }
     }
 
@@ -108,6 +111,7 @@ export const addArtist = async (artistData) => {
       name: artistData.name || "Unknown Artist",
       genre: artistData.genre || "Unspecified",
       imageUrl,
+      imageId,
       link: artistData.link || "",
       platform: artistData.platform || "Other",
       streamingPlatforms: artistData.streamingPlatforms || [],
@@ -130,6 +134,18 @@ export const addArtist = async (artistData) => {
     const docRef = await addDoc(collection(db, "artists"), artistForFirestore)
     console.log("Artist added successfully with ID:", docRef.id)
 
+    // If we uploaded an image, update its entityId
+    if (imageId) {
+      try {
+        await updateDoc(doc(db, "images", imageId), {
+          entityId: docRef.id,
+        })
+      } catch (error) {
+        console.error("Error updating image entityId:", error)
+        // Non-critical error, continue
+      }
+    }
+
     return {
       id: docRef.id,
       ...artistForFirestore,
@@ -144,9 +160,7 @@ export const addArtist = async (artistData) => {
   }
 }
 
-// Update the updateArtist function to add proper type checking and null handling
-
-// Update an artist
+// Update an artist with ImgBB integration
 export const updateArtist = async (id: string, artistData) => {
   try {
     console.log("Starting artist update for ID:", id)
@@ -155,20 +169,51 @@ export const updateArtist = async (id: string, artistData) => {
       throw new Error("Invalid artist data or ID")
     }
 
-    // If there's a new image that's a data URL, upload it to Firebase Storage
-    let imageUrl = artistData.imageUrl
+    // Get the current artist data to check if we need to delete an old image
+    const currentArtistDoc = await getDoc(doc(db, "artists", id))
+    const currentArtist = currentArtistDoc.exists() ? currentArtistDoc.data() : null
+    const oldImageId = currentArtist?.imageId || null
 
-    // Check if imageUrl is defined and is a data URL
+    // If there's a new image that's a data URL, upload it to ImgBB
+    let imageUrl = artistData.imageUrl
+    let imageId = artistData.imageId || null
+
+    // Check if imageUrl is defined and is a data URL (new image upload)
     if (imageUrl && typeof imageUrl === "string" && imageUrl.startsWith("data:")) {
       try {
-        const storageRef = ref(storage, `artist-images/${Date.now()}`)
-        await uploadString(storageRef, imageUrl, "data_url")
-        imageUrl = await getDownloadURL(storageRef)
+        // Upload to ImgBB and store metadata in Firebase
+        const imageData = await uploadImage(imageUrl, artistData.createdBy, id)
+        imageUrl = imageData.displayUrl
+        imageId = imageData.id
+
+        // If we had an old image and we're replacing it, delete the old one
+        if (oldImageId && oldImageId !== imageId) {
+          try {
+            await deleteImageMetadata(oldImageId)
+          } catch (deleteError) {
+            console.error("Error deleting old image:", deleteError)
+            // Non-critical error, continue
+          }
+        }
       } catch (error) {
         console.error("Error uploading image:", error)
-        // If image upload fails, keep the existing image URL
-        imageUrl = artistData.imageUrl
+        // If image upload fails, keep the existing image URL and ID
+        imageUrl = currentArtist?.imageUrl || null
+        imageId = oldImageId
       }
+    } else if (imageUrl === null && oldImageId) {
+      // If imageUrl is explicitly set to null, delete the old image
+      try {
+        await deleteImageMetadata(oldImageId)
+        imageId = null
+      } catch (deleteError) {
+        console.error("Error deleting old image:", deleteError)
+        // Non-critical error, continue
+      }
+    } else if (currentArtist?.imageUrl && !imageUrl) {
+      // If no new image and we had an old one, keep the old one
+      imageUrl = currentArtist.imageUrl
+      imageId = oldImageId
     }
 
     // Ensure all fields are properly formatted and handle undefined values
@@ -176,6 +221,7 @@ export const updateArtist = async (id: string, artistData) => {
       name: artistData.name || "Unknown Artist",
       genre: artistData.genre || "Unspecified",
       imageUrl: imageUrl || null,
+      imageId: imageId || null,
       link: typeof artistData.link === "string" ? artistData.link : "",
       platform: artistData.platform || "Other",
       streamingPlatforms: Array.isArray(artistData.streamingPlatforms)
@@ -213,9 +259,26 @@ export const updateArtist = async (id: string, artistData) => {
   }
 }
 
-// Delete an artist
+// Delete an artist and its associated images
 export const deleteArtist = async (id: string) => {
   try {
+    // Get the artist to check for associated images
+    const artistDoc = await getDoc(doc(db, "artists", id))
+    if (artistDoc.exists()) {
+      const artist = artistDoc.data()
+
+      // If the artist has an image, delete it
+      if (artist.imageId) {
+        try {
+          await deleteImageMetadata(artist.imageId)
+        } catch (error) {
+          console.error("Error deleting artist image:", error)
+          // Non-critical error, continue with artist deletion
+        }
+      }
+    }
+
+    // Delete the artist document
     await deleteDoc(doc(db, "artists", id))
     return id
   } catch (error) {

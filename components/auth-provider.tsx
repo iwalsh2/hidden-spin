@@ -2,7 +2,9 @@
 import { createContext, useContext, useState, useEffect } from "react"
 import { onAuthStateChanged, type User } from "firebase/auth"
 import { getFirebaseAuth } from "@/lib/firebase"
-import { signInWithEmail, signInWithGoogle, signOut, signUpWithEmail, updateUserProfile } from "@/lib/auth-service"
+import { signInWithEmail, signInWithGoogle, signOut, signUpWithEmail } from "@/lib/auth-service"
+import { updateUserProfile as updateProfile } from "@/lib/user-service"
+import { createOrUpdateUserProfile } from "@/lib/user-service"
 
 interface AuthContextType {
   user: User | null
@@ -36,8 +38,18 @@ export function AuthProvider({ children }) {
       try {
         const auth = await getFirebaseAuth()
         if (auth) {
-          unsubscribe = onAuthStateChanged(auth, (user) => {
+          unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user)
+
+            // Create or update user profile in Firestore when user signs in
+            if (user) {
+              try {
+                await createOrUpdateUserProfile(user)
+              } catch (error) {
+                console.error("Error creating/updating user profile:", error)
+              }
+            }
+
             setLoading(false)
           })
         } else {
@@ -68,13 +80,13 @@ export function AuthProvider({ children }) {
   }
 
   // Update profile
-  const updateProfile = async (data: { displayName?: string; photoURL?: string }) => {
+  const handleUpdateProfile = async (data: { displayName?: string; photoURL?: string }) => {
     if (!user) {
       throw new Error("No user is signed in")
     }
 
     try {
-      await updateUserProfile(user, data)
+      await updateProfile(user.uid, data)
     } catch (error) {
       console.error("Error updating profile:", error)
       throw error
@@ -89,7 +101,7 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     signUp,
     signOut,
-    updateUserProfile: updateProfile,
+    updateUserProfile: handleUpdateProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
