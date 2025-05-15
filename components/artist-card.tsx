@@ -27,7 +27,13 @@ import { Badge } from "@/components/ui/badge"
 import { toggleSaveArtist } from "@/lib/artist-service"
 import { useToast } from "@/components/ui/use-toast"
 
-export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate, onDelete }) {
+export default function ArtistCard({
+  artist,
+  currentUser,
+  onGenreClick,
+  onUpdate,
+  onDelete,
+}) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
@@ -35,48 +41,28 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
   const router = useRouter()
   const { toast } = useToast()
 
-  // Add the heart button state
-  const [isSaved, setIsSaved] = useState(artist.savedBy?.includes(currentUser?.uid) || false)
+  const [isSaved, setIsSaved] = useState(
+    artist.savedBy?.includes(currentUser?.uid) || false
+  )
   const [isSaving, setIsSaving] = useState(false)
-
-  // Check if current user is the creator of this artist
   const isCreator = currentUser?.uid === artist.createdBy
 
-  // Handle card click to show details
-  const handleCardClick = () => {
-    setIsDetailsModalOpen(true)
-  }
-
-  // Prevent propagation for action buttons
-  const handleActionClick = (e) => {
-    e.stopPropagation()
-  }
-
-  // Navigate to user profile
-  const navigateToUserProfile = (userId) => {
-    if (userId) {
-      router.push(`/profile/${userId}`)
-    }
-  }
-
-  // Handle external link click to show links dialog
+  const handleCardClick = () => setIsDetailsModalOpen(true)
   const handleExternalLinkClick = (e) => {
     e.stopPropagation()
     setIsLinksDialogOpen(true)
   }
-
-  // Open the selected link in a new tab
+  const navigateToUserProfile = (userId) => {
+    if (userId) router.push(`/profile/${userId}`)
+  }
   const openLink = (url) => {
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer")
       setIsLinksDialogOpen(false)
     }
   }
-
-  // Add function to toggle save state
   const handleToggleSave = async (e) => {
     e.stopPropagation()
-
     if (!currentUser) {
       toast({
         title: "Authentication required",
@@ -85,8 +71,7 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       })
       return
     }
-
-    if (!artist || !artist.id) {
+    if (!artist?.id) {
       toast({
         title: "Error",
         description: "Invalid artist data",
@@ -94,31 +79,15 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       })
       return
     }
-
     try {
       setIsSaving(true)
-
-      // Toggle save in Firestore
       await toggleSaveArtist(artist.id, currentUser.uid, isSaved)
-
-      // Update local state
       const updatedSavedList = isSaved
         ? (artist.savedBy || []).filter((id) => id !== currentUser.uid)
         : [...(artist.savedBy || []), currentUser.uid]
-
-      const updatedArtist = {
-        ...artist,
-        savedBy: updatedSavedList,
-      }
-
+      const updatedArtist = { ...artist, savedBy: updatedSavedList }
       setIsSaved(!isSaved)
-
-      // Ensure all required fields are present before updating
-      if (typeof onUpdate === "function") {
-        onUpdate(updatedArtist)
-      }
-
-      setIsSaving(false)
+      if (typeof onUpdate === "function") onUpdate(updatedArtist)
     } catch (error) {
       console.error("Error toggling save:", error)
       toast({
@@ -126,24 +95,26 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
         description: `Failed to save artist: ${error.message || "Unknown error"}`,
         variant: "destructive",
       })
+    } finally {
       setIsSaving(false)
     }
   }
 
   return (
     <>
-      <Card className="hover:shadow-md transition-shadow overflow-hidden cursor-pointer" onClick={handleCardClick}>
+      <Card
+        className="hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+        onClick={handleCardClick}
+      >
         <div className="relative w-full aspect-square">
           {artist.imageUrl ? (
             <div className="relative w-full h-full">
-              {/* Vinyl sleeve styling - removed the center circle */}
-              <div className="absolute inset-0 border-8 border-gray-200 dark:border-gray-800 rounded-t-md z-10"></div>
+              <div className="absolute inset-0 border-8 border-gray-200 dark:border-gray-800 rounded-t-md z-10" />
               <img
-                src={artist.imageUrl || "/placeholder.png"}
+                src={artist.imageUrl}
                 alt={`${artist.name} profile image`}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  // If image fails to load, replace with placeholder
                   e.currentTarget.src = "/placeholder.png"
                 }}
               />
@@ -172,7 +143,11 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 ${isSaved ? "text-[#415da6]" : "text-muted-foreground hover:text-[#415da6]"}`}
+                className={`h-8 w-8 ${
+                  isSaved
+                    ? "text-[#415da6]"
+                    : "text-muted-foreground hover:text-[#415da6]"
+                }`}
                 onClick={handleToggleSave}
                 title={isSaved ? "Remove from saved" : "Save artist"}
                 disabled={!currentUser || isSaving}
@@ -232,22 +207,28 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
         </CardContent>
       </Card>
 
-      {/* Artist Details Modal - Adjusted size and content */}
+      {/* Artist Details Modal */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-y-auto max-h-[85vh] my-auto">
+          <DialogHeader>
+            <DialogTitle>Artist Details</DialogTitle>
+            <DialogDescription>
+              All the information for {artist.name}
+            </DialogDescription>
+          </DialogHeader>
+
           <div className="relative">
             {artist.imageUrl ? (
               <div className="w-full h-[200px] relative">
                 <img
-                  src={artist.imageUrl || "/placeholder.png"}
+                  src={artist.imageUrl}
                   alt={artist.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    // If image fails to load, replace with placeholder
                     e.currentTarget.src = "/placeholder.png"
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
               </div>
             ) : (
               <div className="w-full h-[100px] bg-black dark:bg-zinc-900 flex items-center justify-center">
@@ -264,23 +245,24 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                   <Badge variant="secondary" className="rounded-full">
                     {artist.genre}
                   </Badge>
-                  {/* Removed platform name display here */}
                 </div>
               </div>
 
               <div className="grid gap-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Listen On</h3>
-                  {artist.streamingPlatforms && artist.streamingPlatforms.length > 0 ? (
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                    Listen On
+                  </h3>
+                  {artist.streamingPlatforms?.length > 0 ? (
                     <div className="flex flex-col gap-2">
-                      {artist.streamingPlatforms.map((platform, index) => (
+                      {artist.streamingPlatforms.map((p, i) => (
                         <Button
-                          key={index}
+                          key={i}
                           variant="outline"
-                          className="w-full justify-center text-center"
-                          onClick={() => openLink(platform.url)}
+                          className="w-full justify-center"
+                          onClick={() => openLink(p.url)}
                         >
-                          {platform.name}
+                          {p.name}
                         </Button>
                       ))}
                     </div>
@@ -303,7 +285,9 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                   artist.website ||
                   artist.youtube) && (
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Social Media</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                      Social Media
+                    </h3>
                     <div className="flex flex-wrap gap-4 mt-2">
                       {artist.website && (
                         <a
@@ -457,36 +441,44 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 )}
 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Added By</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                    Added By
+                  </h3>
                   <button
-                    onClick={() => navigateToUserProfile(artist.createdBy)}
+                    onClick={() =>
+                      navigateToUserProfile(artist.createdBy)
+                    }
                     className="flex items-center gap-2 text-primary hover:underline"
                   >
                     <User className="h-3 w-3" />
-                    <span>{artist.creatorName || "Anonymous User"}</span>
+                    <span>
+                      {artist.creatorName || "Anonymous User"}
+                    </span>
                   </button>
                 </div>
-              </div>
 
-              <div className="flex justify-end mt-2">
-                <DialogClose asChild>
-                  <Button>Close</Button>
-                </DialogClose>
+                <div className="flex justify-end mt-2">
+                  <DialogClose asChild>
+                    <Button>Close</Button>
+                  </DialogClose>
+                </div>
               </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* New Links Dialog */}
+      {/* Links Dialog */}
       <Dialog open={isLinksDialogOpen} onOpenChange={setIsLinksDialogOpen}>
         <DialogContent className="sm:max-w-[400px] max-h-[80vh]">
           <DialogHeader className="text-center">
             <DialogTitle>Open Artist Link</DialogTitle>
-            <DialogDescription>Choose which platform to open for {artist.name}</DialogDescription>
+            <DialogDescription>
+              Choose which platform to open for {artist.name}
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-3 overflow-y-auto max-h-[50vh]">
-            {artist.streamingPlatforms && artist.streamingPlatforms.length > 0 ? (
+            {artist.streamingPlatforms?.length > 0 ? (
               artist.streamingPlatforms.map((platform, index) => (
                 <Button
                   key={index}
@@ -506,18 +498,26 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                 {artist.platform || "Listen"}
               </Button>
             ) : (
-              <p className="text-center text-muted-foreground">No streaming links available</p>
+              <p className="text-center text-muted-foreground">
+                No streaming links available
+              </p>
             )}
 
-            {/* Add social media links if available */}
-            {(artist.youtube || artist.website || artist.instagram || artist.facebook || artist.x || artist.tiktok) && (
+            {(artist.youtube ||
+              artist.website ||
+              artist.instagram ||
+              artist.facebook ||
+              artist.x ||
+              artist.tiktok) && (
               <>
                 <div className="relative py-2">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="bg-background px-2 text-xs text-muted-foreground">Social Media</span>
+                    <span className="bg-background px-2 text-xs text-muted-foreground">
+                      Social Media
+                    </span>
                   </div>
                 </div>
 
@@ -530,7 +530,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     YouTube
                   </Button>
                 )}
-
                 {artist.website && (
                   <Button
                     variant="outline"
@@ -540,7 +539,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     Website
                   </Button>
                 )}
-
                 {artist.instagram && (
                   <Button
                     variant="outline"
@@ -550,7 +548,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     Instagram
                   </Button>
                 )}
-
                 {artist.facebook && (
                   <Button
                     variant="outline"
@@ -560,7 +557,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     Facebook
                   </Button>
                 )}
-
                 {artist.x && (
                   <Button
                     variant="outline"
@@ -570,7 +566,6 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
                     X
                   </Button>
                 )}
-
                 {artist.tiktok && (
                   <Button
                     variant="outline"
@@ -596,9 +591,10 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
         <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Artist Details</DialogTitle>
-            <DialogDescription>Update information for {artist.name}</DialogDescription>
+            <DialogDescription>
+              Update information for {artist.name}
+            </DialogDescription>
           </DialogHeader>
-
           <ArtistEditForm
             artist={artist}
             onSave={(updatedArtist) => {
@@ -611,12 +607,16 @@ export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {artist.name} from the library. This action cannot be undone.
+              This will permanently delete {artist.name} from the library. This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
