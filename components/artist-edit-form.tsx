@@ -3,12 +3,11 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Music2, Plus, X, Trash, PlusCircle, Upload, ImageIcon } from "lucide-react"
+import { Music2, Plus, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 // Add imports at the top
+import { PlusCircle, Trash } from "lucide-react"
 import { STREAMING_PLATFORMS, detectPlatformFromUrl } from "@/lib/platform-utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function ArtistEditForm({ artist, onSave, onCancel }) {
   // Update the useState to include streaming platforms and YouTube
@@ -24,14 +23,8 @@ export default function ArtistEditForm({ artist, onSave, onCancel }) {
   const [newPlatformName, setNewPlatformName] = useState("Other")
   const [newPlatformUrl, setNewPlatformUrl] = useState("")
 
-  // Add state for image management
-  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadError, setUploadError] = useState("")
-
   // Add ref for URL input
   const newPlatformUrlRef = useRef(null)
-  const fileInputRef = useRef(null)
 
   // Handle image upload
   const handleImageChange = (e) => {
@@ -45,29 +38,11 @@ export default function ArtistEditForm({ artist, onSave, onCancel }) {
             setEditedArtist({
               ...editedArtist,
               imageUrl: e.target.result.toString(),
-              // Clear imageId since we're uploading a new image
-              imageId: null,
             })
           }
         }
         reader.readAsDataURL(file)
       }
-    }
-  }
-
-  // Remove image
-  const handleRemoveImage = () => {
-    setEditedArtist({
-      ...editedArtist,
-      imageUrl: null,
-      imageId: null,
-    })
-  }
-
-  // Open file dialog
-  const handleOpenFileDialog = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
     }
   }
 
@@ -89,6 +64,8 @@ export default function ArtistEditForm({ artist, onSave, onCancel }) {
     updated[type] = ""
     setEditedArtist(updated)
   }
+
+  // Update the handleStreamingUrlChange function to add proper type checking
 
   // Handle streaming URL change with auto-detection
   const handleStreamingUrlChange = (e, index) => {
@@ -214,42 +191,7 @@ export default function ArtistEditForm({ artist, onSave, onCancel }) {
             )}
           </div>
           <div className="flex-1">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleOpenFileDialog}
-                className="flex items-center gap-1"
-              >
-                <Upload className="h-4 w-4" />
-                Upload Image
-              </Button>
-
-              {editedArtist.imageUrl && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemoveImage}
-                  className="flex items-center gap-1 text-destructive hover:text-destructive"
-                >
-                  <Trash className="h-4 w-4" />
-                  Remove
-                </Button>
-              )}
-            </div>
-            <Input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-              ref={fileInputRef}
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Images will be uploaded to ImgBB and optimized for display
-            </p>
+            <Input id="image-upload" type="file" accept="image/*" onChange={handleImageChange} className="mb-2" />
           </div>
         </div>
       </div>
@@ -483,63 +425,6 @@ export default function ArtistEditForm({ artist, onSave, onCancel }) {
           Save Changes
         </Button>
       </div>
-
-      {/* Image Management Dialog */}
-      <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Manage Artist Image</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {uploadError && (
-              <Alert variant="destructive">
-                <AlertDescription>{uploadError}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="flex flex-col items-center gap-4">
-              {editedArtist.imageUrl ? (
-                <div className="relative w-full max-w-[300px] aspect-square mx-auto">
-                  <img
-                    src={editedArtist.imageUrl || "/placeholder.svg"}
-                    alt="Artist preview"
-                    className="w-full h-full object-cover rounded-md"
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-40 bg-muted rounded-md flex items-center justify-center">
-                  <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleOpenFileDialog} className="flex items-center gap-1">
-                  <Upload className="h-4 w-4" />
-                  Upload New Image
-                </Button>
-
-                {editedArtist.imageUrl && (
-                  <Button
-                    variant="outline"
-                    onClick={handleRemoveImage}
-                    className="flex items-center gap-1 text-destructive hover:text-destructive"
-                  >
-                    <Trash className="h-4 w-4" />
-                    Remove
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <DialogClose asChild>
-              <Button variant="outline">Close</Button>
-            </DialogClose>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

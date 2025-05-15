@@ -463,7 +463,7 @@ export default function AddArtistForm({
         name: artistName.trim() || "Unknown Artist",
         genre: finalGenre || "Unspecified",
         platform: streamingPlatforms[0].name,
-        imageUrl: imagePreview, // Will be uploaded to ImgBB in the artist service
+        imageUrl: imagePreview, // Use the cropped image
         createdBy: currentUser?.uid || "anonymous",
         creatorName: currentUser?.displayName || "Anonymous User",
         isOwnMusic: isOwnMusic === "yes",
