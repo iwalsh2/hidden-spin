@@ -1,125 +1,142 @@
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore"
-import { db } from "./firebase"
-import { uploadImage } from "./image-service"
+"use client"
+import { useState, useRef, useEffect } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Music2, ExternalLink, User, X } from "lucide-react"
+import { useRouter } from "next/navigation"
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import ArtistEditForm from "./artist-edit-form"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { toggleSaveArtist } from "@/lib/artist-service"
+import { useToast } from "@/components/ui/use-toast"
 
-/**
- * Create or update a user profile in Firestore
- * @param user Firebase Auth user object
- * @returns Promise with the user profile data
- */
-export const createOrUpdateUserProfile = async (user: any): Promise<any> => {
-  if (!user || !user.uid) {
-    throw new Error("Invalid user data")
-  }
+export default function ArtistCard({ artist, currentUser, onGenreClick, onUpdate, onDelete }) {
+  // …[all your existing hooks and handlers]…
 
-  try {
-    const userRef = doc(db, "users", user.uid)
-    const userDoc = await getDoc(userRef)
+  return (
+    <>
+      <Card className="hover:shadow-md transition-shadow overflow-hidden cursor-pointer" onClick={handleCardClick}>
+        {/* …[card content as before]… */}
+      </Card>
 
-    // If user exists, update last login
-    if (userDoc.exists()) {
-      await updateDoc(userRef, {
-        lastLogin: new Date().toISOString(),
-      })
+      {/* Artist Details Modal */}
+      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-y-auto max-h-[85vh] my-auto">
+          <DialogClose asChild>
+            <Button
+              variant="ghost"
+              className="absolute right-4 top-4 z-10 text-white hover:text-gray-200"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </DialogClose>
 
-      return {
-        id: user.uid,
-        ...userDoc.data(),
-      }
-    }
+          {/* …[rest of the details modal body]… */}
+        </DialogContent>
+      </Dialog>
 
-    // Create new user profile
-    const userData = {
-      uid: user.uid,
-      email: user.email || null,
-      displayName: user.displayName || "Anonymous User",
-      photoURL: user.photoURL || "/images/default-avatar.png",
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-    }
+      {/* Links Dialog */}
+      <Dialog open={isLinksDialogOpen} onOpenChange={setIsLinksDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] max-h-[80vh]">
+          <DialogClose asChild>
+            <Button variant="ghost" className="absolute right-4 top-4 z-10">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </DialogClose>
 
-    await setDoc(userRef, userData)
+          <DialogHeader className="text-center">
+            <DialogTitle>Open Artist Link</DialogTitle>
+            <DialogDescription>Choose which platform to open for {artist.name}</DialogDescription>
+          </DialogHeader>
 
-    return {
-      id: user.uid,
-      ...userData,
-    }
-  } catch (error) {
-    console.error("Error creating/updating user profile:", error)
-    throw error
-  }
-}
+          {/* …[links list]… */}
 
-/**
- * Get a user profile by ID
- * @param userId User ID
- * @returns Promise with the user profile data
- */
-export const getUserProfile = async (userId: string): Promise<any> => {
-  try {
-    const userDoc = await getDoc(doc(db, "users", userId))
+          <div className="flex justify-end pt-2 border-t">
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-    if (userDoc.exists()) {
-      return {
-        id: userId,
-        ...userDoc.data(),
-      }
-    }
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+          <DialogClose asChild>
+            <Button variant="ghost" className="absolute right-4 top-4 z-10">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </DialogClose>
 
-    return null
-  } catch (error) {
-    console.error("Error getting user profile:", error)
-    throw error
-  }
-}
+          <DialogHeader>
+            <DialogTitle>Edit Artist Details</DialogTitle>
+            <DialogDescription>Update information for {artist.name}</DialogDescription>
+          </DialogHeader>
 
-/**
- * Update user profile data
- * @param userId User ID
- * @param profileData Profile data to update
- * @returns Promise with the updated profile
- */
-export const updateUserProfile = async (userId: string, profileData: any): Promise<any> => {
-  try {
-    // Handle profile image upload if it's a base64 string
-    let photoURL = profileData.photoURL
+          <ArtistEditForm
+            artist={artist}
+            onSave={(updatedArtist) => {
+              onUpdate(updatedArtist)
+              setIsEditModalOpen(false)
+            }}
+            onCancel={() => setIsEditModalOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
-    if (photoURL && typeof photoURL === "string" && photoURL.startsWith("data:")) {
-      // Upload to ImgBB and store in Firebase
-      const imageData = await uploadImage(photoURL, userId)
-      photoURL = imageData.displayUrl
-    }
+      {/* Delete Confirmation */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {artist.name} from the library. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDelete(artist.id)
+                setIsDeleteDialogOpen(false)
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-    const updatedData = {
-      ...profileData,
-      photoURL,
-      updatedAt: new Date().toISOString(),
-    }
-
-    // Update in Firestore
-    await updateDoc(doc(db, "users", userId), updatedData)
-
-    // Update in Firebase Auth if needed
-    if (profileData.displayName || photoURL) {
-      const auth = await import("firebase/auth").then((module) => module.getAuth())
-      const currentUser = auth.currentUser
-
-      if (currentUser) {
-        await import("firebase/auth").then((module) =>
-          module.updateProfile(currentUser, {
-            displayName: profileData.displayName || currentUser.displayName,
-            photoURL: photoURL || currentUser.photoURL,
-          }),
-        )
-      }
-    }
-
-    return {
-      id: userId,
-      ...updatedData,
-    }
-  } catch (error) {
-    console.error("Error updating user profile:", error)
-    throw error
-  }
+      {/* Global keyframes for heart animations (unchanged) */}
+      <style jsx global>{`
+        @keyframes heartBeat { /* ... */ }
+        @keyframes heartPulse { /* ... */ }
+        .heart-animation { animation: heartBeat 0.5s ease-in-out; }
+        .heart-pulse { animation: heartPulse 0.5s ease-in-out; transform-origin: center; color: #ff4081; }
+        @keyframes float { /* ... */ }
+        .floating-heart { /* ... */ }
+      `}</style>
+    </>
+  )
 }
