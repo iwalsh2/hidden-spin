@@ -1,18 +1,19 @@
 "use client"
+
 import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Music2, Plus, Search, Filter, Loader2 } from "lucide-react"
+import { Music2, Plus, Search, Filter, Loader2, X } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import ArtistCard from "@/components/artist-card"
 import { useToast } from "@/components/ui/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import AddArtistForm from "@/components/add-artist-form"
-import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogClose } from "@/components/ui/dialog"
 import { getAllArtists, addArtist, updateArtist, deleteArtist, subscribeToArtists } from "@/lib/artist-service"
 
 export default function Library() {
@@ -32,8 +33,8 @@ export default function Library() {
   const [addArtistDialogOpen, setAddArtistDialogOpen] = useState(false)
 
   // Refs for the tab items
-  const libraryTabRef = useRef(null)
-  const addArtistButtonRef = useRef(null)
+  const libraryTabRef = useRef<HTMLButtonElement>(null)
+  const addArtistButtonRef = useRef<HTMLButtonElement>(null)
 
   // State for the underline position
   const [underlineStyle, setUnderlineStyle] = useState({
@@ -43,7 +44,7 @@ export default function Library() {
 
   // Update underline position when active tab changes
   useEffect(() => {
-    let animationFrameId
+    let animationFrameId: number | undefined
 
     const updateHighlight = () => {
       // Cancel any pending animation frame
@@ -54,19 +55,27 @@ export default function Library() {
       // Schedule the update in the next animation frame
       animationFrameId = requestAnimationFrame(() => {
         if (activeTab === "library" && libraryTabRef.current) {
-          const rect = libraryTabRef.current.getBoundingClientRect()
-          const parentRect = libraryTabRef.current.parentElement?.getBoundingClientRect() || { left: 0 }
-          setUnderlineStyle({
-            left: rect.left - parentRect.left,
-            width: rect.width,
-          })
+          const element = libraryTabRef.current
+          const parent = element.parentElement
+          if (element && parent) {
+            const rect = element.getBoundingClientRect()
+            const parentRect = parent.getBoundingClientRect()
+            setUnderlineStyle({
+              left: rect.left - parentRect.left,
+              width: rect.width,
+            })
+          }
         } else if (addArtistDialogOpen && addArtistButtonRef.current) {
-          const rect = addArtistButtonRef.current.getBoundingClientRect()
-          const parentRect = addArtistButtonRef.current.parentElement?.getBoundingClientRect() || { left: 0 }
-          setUnderlineStyle({
-            left: rect.left - parentRect.left,
-            width: rect.width,
-          })
+          const element = addArtistButtonRef.current
+          const parent = element.parentElement
+          if (element && parent) {
+            const rect = element.getBoundingClientRect()
+            const parentRect = parent.getBoundingClientRect()
+            setUnderlineStyle({
+              left: rect.left - parentRect.left,
+              width: rect.width,
+            })
+          }
         }
       })
     }
@@ -79,7 +88,9 @@ export default function Library() {
 
     return () => {
       clearTimeout(timer)
-      cancelAnimationFrame(animationFrameId)
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
       window.removeEventListener("resize", updateHighlight)
     }
   }, [activeTab, addArtistDialogOpen])
@@ -94,14 +105,12 @@ export default function Library() {
     const loadArtists = async () => {
       try {
         setIsLoading(true)
-        console.log("Loading artists from Firestore...")
         const artistsData = await getAllArtists()
-        console.log(`Loaded ${artistsData.length} artists from Firestore`)
         setArtists(artistsData)
 
         // Extract unique genres
-        const genres = [...new Set(artistsData.map((artist) => artist.genre).filter(Boolean))]
-        setUsedGenres(genres)
+        const genres = [...new Set(artistsData.map((artist: any) => artist.genre).filter(Boolean))]
+        setUsedGenres(genres as string[])
 
         setIsLoading(false)
       } catch (error) {
@@ -120,18 +129,15 @@ export default function Library() {
 
   // Subscribe to real-time updates
   useEffect(() => {
-    console.log("Setting up real-time subscription to artists...")
-    const unsubscribe = subscribeToArtists((updatedArtists) => {
-      console.log(`Received ${updatedArtists.length} artists from real-time update`)
+    const unsubscribe = subscribeToArtists((updatedArtists: any[]) => {
       setArtists(updatedArtists)
 
       // Extract unique genres
       const genres = [...new Set(updatedArtists.map((artist) => artist.genre).filter(Boolean))]
-      setUsedGenres(genres)
+      setUsedGenres(genres as string[])
     })
 
     return () => {
-      console.log("Unsubscribing from artists updates")
       unsubscribe()
     }
   }, [])
@@ -144,7 +150,7 @@ export default function Library() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       result = result.filter(
-        (artist) =>
+        (artist: any) =>
           (artist.name ? artist.name.toLowerCase().includes(query) : false) ||
           (artist.genre ? artist.genre.toLowerCase().includes(query) : false) ||
           (artist.platform ? artist.platform.toLowerCase().includes(query) : false),
@@ -153,13 +159,13 @@ export default function Library() {
 
     // Filter by selected genre
     if (selectedGenre) {
-      result = result.filter((artist) =>
+      result = result.filter((artist: any) =>
         artist.genre ? artist.genre.toLowerCase() === selectedGenre.toLowerCase() : false,
       )
     }
 
     // Sort alphabetically with null/undefined checks
-    return result.sort((a, b) => {
+    return result.sort((a: any, b: any) => {
       const nameA = a.name ? a.name.toLowerCase() : ""
       const nameB = b.name ? b.name.toLowerCase() : ""
       return nameA.localeCompare(nameB)
@@ -191,7 +197,7 @@ export default function Library() {
   }
 
   // Handle artist update
-  const handleArtistUpdate = async (updatedArtist) => {
+  const handleArtistUpdate = async (updatedArtist: any) => {
     try {
       // Validate the artist data before updating
       if (!updatedArtist || !updatedArtist.id) {
@@ -210,7 +216,7 @@ export default function Library() {
         name: updatedArtist.name || "Unknown Artist",
         genre: updatedArtist.genre || "Unspecified",
         streamingPlatforms: Array.isArray(updatedArtist.streamingPlatforms)
-          ? updatedArtist.streamingPlatforms.map((platform) => ({
+          ? updatedArtist.streamingPlatforms.map((platform: any) => ({
               name: platform.name || "Other",
               url: typeof platform.url === "string" ? platform.url : "",
             }))
@@ -218,15 +224,8 @@ export default function Library() {
         savedBy: Array.isArray(updatedArtist.savedBy) ? updatedArtist.savedBy : [],
       }
 
-      console.log("Sending artist update:", validatedArtist)
       await updateArtist(validatedArtist.id, validatedArtist)
-
-      // Remove success toast notification
-      // toast({
-      //   title: "Success",
-      //   description: "Artist updated successfully",
-      // })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating artist:", error)
       toast({
         title: "Error",
@@ -237,7 +236,7 @@ export default function Library() {
   }
 
   // Handle artist delete
-  const handleArtistDelete = async (artistId) => {
+  const handleArtistDelete = async (artistId: string) => {
     try {
       await deleteArtist(artistId)
       toast({
@@ -255,17 +254,16 @@ export default function Library() {
   }
 
   // Handle adding an artist
-  const handleAddArtist = async (newArtist) => {
+  const handleAddArtist = async (newArtist: any) => {
     try {
       setIsAddingArtist(true)
-      console.log("Checking if artist already exists...")
 
       // Check if artist already exists
       const exists = artists.some(
-        (artist) =>
-          artist.streamingPlatforms?.some((platform) =>
+        (artist: any) =>
+          artist.streamingPlatforms?.some((platform: any) =>
             newArtist.streamingPlatforms?.some(
-              (newPlatform) => platform.url?.toLowerCase() === newPlatform.url?.toLowerCase(),
+              (newPlatform: any) => platform.url?.toLowerCase() === newPlatform.url?.toLowerCase(),
             ),
           ) || artist.link?.toLowerCase() === newArtist.link?.toLowerCase(),
       )
@@ -280,7 +278,6 @@ export default function Library() {
         return false
       }
 
-      console.log("Adding new artist to Firestore:", newArtist.name)
       // Add the artist to Firestore
       await addArtist(newArtist)
 
@@ -291,7 +288,7 @@ export default function Library() {
       })
       setIsAddingArtist(false)
       return true
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding artist:", error)
       toast({
         title: "Error",
@@ -386,19 +383,19 @@ export default function Library() {
                     <p className="text-sm text-muted-foreground mt-1">
                       Be the first to add an undiscovered artist to the library.
                     </p>
-                    <Button variant="outline" className="mt-4" onClick={() => setAddArtistDialogOpen(true)}>
+                    <Button variant="outline" className="mt-4 bg-transparent" onClick={() => setAddArtistDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Artist
                     </Button>
                   </CardContent>
                 </Card>
               ) : (
-                filteredArtists.map((artist) => (
+                filteredArtists.map((artist: any) => (
                   <ArtistCard
                     key={artist.id}
                     artist={artist}
                     currentUser={user}
-                    onGenreClick={(genre) => setSelectedGenre(genre)}
+                    onGenreClick={(genre: string) => setSelectedGenre(genre)}
                     onUpdate={handleArtistUpdate}
                     onDelete={handleArtistDelete}
                   />
@@ -415,6 +412,12 @@ export default function Library() {
         }}
       >
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogClose className="absolute right-4 top-4 z-10">
+            <span>
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </span>
+          </DialogClose>
           <DialogHeader>
             <DialogTitle>Add a Hidden Gem</DialogTitle>
           </DialogHeader>

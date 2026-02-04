@@ -1,34 +1,28 @@
-import { Inter } from "next/font/google"
 import "./globals.css"
+import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
-import Navbar from "@/components/navbar"
 import { AuthProvider } from "@/components/auth-provider"
 import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
+export const metadata = {
+  title: "Hidden Spins",
+  description: "Discover and share hidden gems in music",
+    generator: 'v0.app'
+}
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>Hidden Spins</title>
-        <meta name="description" content="Share and discover hidden musical gems" />
-      </head>
+    <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <div className="min-h-screen bg-background text-foreground">
-              <Navbar />
-              <main>{children}</main>
-              <Toaster />
-            </div>
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
 }
-
-export const metadata = {
-      generator: 'v0.dev'
-    };

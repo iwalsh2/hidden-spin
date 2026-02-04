@@ -1,8 +1,8 @@
-import { initializeApp, getApps, getApp } from "firebase/app"
+import { initializeApp, getApps } from "firebase/app"
+import { getAuth } from "firebase/auth"
 import { getFirestore } from "firebase/firestore"
 import { getStorage } from "firebase/storage"
 
-// Your Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -13,20 +13,8 @@ const firebaseConfig = {
 }
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
-const db = getFirestore(app)
-const storage = getStorage(app)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
-// Create a lazy-loaded auth object
-let auth = null
-
-// Function to get auth that ensures it's only initialized on client side
-export const getFirebaseAuth = async () => {
-  if (typeof window !== "undefined" && !auth) {
-    const { getAuth } = await import("firebase/auth")
-    auth = getAuth(app)
-  }
-  return auth
-}
-
-export { app, db, storage }
+export const auth = getAuth(app)
+export const db = getFirestore(app)
+export const storage = getStorage(app)
